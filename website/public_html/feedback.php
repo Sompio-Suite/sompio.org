@@ -2,7 +2,8 @@
 // Feedback from anyone using the beta: emailed to the address in config.php, with the screenshot
 // attached. Nothing stays on the server: a message waits in private/outbox only while email can't
 // go out. No IP address or browser details are kept. Spam is held off by a hidden field, a signed
-// time stamp and a per-network limit (only a scrambled code made from the address, for one hour).
+// time stamp, a per-network limit (only a scrambled code made from the address, for one hour) and
+// a check for sales pitches (looks_like_spam).
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
 
@@ -41,6 +42,29 @@ function uploaded_shot(): ?array
     return ['data' => (string) file_get_contents($f['tmp_name']), 'ext' => $ext, 'type' => $mime];
 }
 
+/**
+ * Sales spam that gets past the other checks: look-alike "sompio" addresses, the usual
+ * search-ranking pitches, and messages that are mostly links to other websites.
+ */
+function looks_like_spam(string $contact, string $text): bool
+{
+    $domain = strtolower((string) substr(strrchr($contact, '@') ?: '', 1));
+    if ($domain !== '' && str_contains($domain, 'sompio') && $domain !== 'sompio.org') {
+        return true;
+    }
+    if (preg_match('/search index|\bseo\b|backlink|google rank|rank (higher|first)|first page of google|submit your (site|domain|website)|(add|register|submit) sompio\.org|guest post|web traffic|more traffic|casino/i', $text)) {
+        return true;
+    }
+    // Web addresses other than our own and the places a bug report might name
+    preg_match_all('/\b(?:https?:\/\/)?(?:[a-z0-9-]+\.)+[a-z]{2,}\b/i', $text, $m);
+    $ours = '/(^|\.)(sompio\.org|github\.com|discord\.com|reddit\.com|google\.com|microsoft\.com|apple\.com|mozilla\.org)$/i';
+    $other = array_filter($m[0], function (string $u) use ($ours) {
+        $host = preg_replace('#^https?://#i', '', $u);
+        return !preg_match($ours, $host) && !preg_match('/\.(png|jpe?g|webp|txt|log|exe|dmg|deb|appimage|kdbx|csv|json|ics|zip|mbox|html?|php|js|ts|rs)$/i', $host);
+    });
+    return count(array_unique(array_map('strtolower', $other))) >= 2;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Bots fill the hidden field: they get the same thank-you, and nothing is sent
     if (($_POST['website'] ?? '') !== '') {
@@ -62,6 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($contact !== '' && !filter_var($contact, FILTER_VALIDATE_EMAIL)) {
         back('contact');
+    }
+    // Spam gets the same thank-you as everyone else, so it can't learn what was caught
+    if (looks_like_spam($contact, "$name\n$message\n$details")) {
+        back('sent');
     }
     $shot = uploaded_shot();
     if (over_net_limit('feedback', 10, 3600)) {
