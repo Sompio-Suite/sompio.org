@@ -44,7 +44,7 @@ your own lock. This repository holds the complete source, so anyone can check th
 **Status:** open beta on Windows 10 and 11, macOS 11 or newer, and 64-bit Linux, free with everything unlocked
 until launch. On Mac and Linux, auto-type and reading text in pictures are still to come.
 [Download the beta](https://sompio.org/download.php), and send bugs and ideas with
-"Report a bug" in the app's menu, or email hello@sompio.org. News and announcements: [Discord](https://discord.gg/M2UKWaqpxP).
+"Report a bug" in the app's menu, or email hello@sompio.org.
 
 ---
 

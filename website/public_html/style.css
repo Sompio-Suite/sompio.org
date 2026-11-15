@@ -281,7 +281,7 @@ main.wrap.docs > * { margin-top: 2.2rem; }
   .cta-row .button { flex: 1 1 100%; }
 }
 .gh-link { display: inline-flex; align-items: center; gap: 0.35rem; }
-.gh-icon, .dc-icon { flex: none; }
+.gh-icon { flex: none; }
 
 /* Join the beta */
 .join { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 2.4rem; align-items: start; padding-top: 3.2rem; scroll-margin-top: 72px; }
