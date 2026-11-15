@@ -213,3 +213,49 @@ function looks_like_spam(string $contact, string $text): bool
     });
     return count(array_unique(array_map('strtolower', $other))) >= 2;
 }
+
+/**
+ * Daily totals, nothing else: how many downloads per system and how many update checks a day.
+ * Only the counts are stored (private/data/stats.json), never who, from where or with what.
+ */
+const STAT_NAMES = [
+    'download_windows' => 'Downloads: Windows',
+    'download_mac' => 'Downloads: Mac',
+    'download_linux' => 'Downloads: Linux (AppImage)',
+    'download_deb' => 'Downloads: Linux (.deb)',
+    'update_check' => 'Update checks from installed copies',
+];
+
+function count_stat(string $name): void
+{
+    if (!isset(STAT_NAMES[$name])) {
+        return;
+    }
+    $dir = PRIVATE_DIR . '/data';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    $fh = @fopen($dir . '/stats.json', 'c+');
+    if (!$fh) {
+        return;
+    }
+    if (flock($fh, LOCK_EX)) {
+        $all = json_decode((string) stream_get_contents($fh), true) ?: [];
+        $day = gmdate('Y-m-d');
+        $all[$day][$name] = ($all[$day][$name] ?? 0) + 1;
+        ksort($all);
+        $all = array_slice($all, -400, null, true);
+        ftruncate($fh, 0);
+        rewind($fh);
+        fwrite($fh, json_encode($all));
+        fflush($fh);
+        flock($fh, LOCK_UN);
+    }
+    fclose($fh);
+}
+
+function read_stats(): array
+{
+    $f = PRIVATE_DIR . '/data/stats.json';
+    return is_file($f) ? (json_decode((string) file_get_contents($f), true) ?: []) : [];
+}

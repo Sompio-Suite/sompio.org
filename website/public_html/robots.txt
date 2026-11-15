@@ -6,6 +6,7 @@ Disallow: /download.php?get=1
 Disallow: /update.php
 Disallow: /publish.php
 Disallow: /signup.php
+Disallow: /stats.php
 Disallow: /private/
 
 Sitemap: https://sompio.org/sitemap.xml

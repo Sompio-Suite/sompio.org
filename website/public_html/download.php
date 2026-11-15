@@ -7,6 +7,15 @@ require __DIR__ . '/private/lib.php';
 
 $r = latest_release();
 
+// Mac and Linux files live on GitHub: count the click, then send the browser there
+$to = ['mac' => 'mac', 'linux' => 'linux_appimage', 'deb' => 'linux_deb'];
+if (isset($_GET['to'], $to[$_GET['to']]) && $r && isset($r['platforms'][$to[$_GET['to']]]['url'])) {
+    count_stat('download_' . $_GET['to']);
+    header('Cache-Control: private, no-store');
+    header('Location: ' . $r['platforms'][$to[$_GET['to']]]['url'], true, 302);
+    exit;
+}
+
 if (isset($_GET['get'])) {
     if ($r === null) {
         http_response_code(404);
@@ -17,6 +26,7 @@ if (isset($_GET['get'])) {
         header('Retry-After: 3600');
         exit('Too many downloads from your network in the last hour. Please try again later.');
     }
+    count_stat('download_windows');
     @ini_set('zlib.output_compression', 'Off');
     while (ob_get_level()) {
         ob_end_clean();
@@ -74,7 +84,7 @@ site_header('download');
           <?php if ($hasMac): $m = $pl['mac']; ?>
           <div class="os-panel" id="for-mac" data-os="mac">
             <p class="small muted">macOS 11 or newer, Apple silicon and Intel · <?= e(human_size($m['size'])) ?></p>
-            <a class="button primary big" href="<?= e($m['url']) ?>" rel="nofollow noopener noreferrer">Download for Mac</a>
+            <a class="button primary big" href="download.php?to=mac" rel="nofollow">Download for Mac</a>
             <div class="fingerprint">
               <p class="fp-label"><?= SHIELD_ICON ?>File fingerprint (SHA-256)</p>
               <code class="hash"><?= e(strtoupper($m['sha256'])) ?></code>
@@ -87,14 +97,14 @@ site_header('download');
           <div class="os-panel" id="for-linux" data-os="linux">
             <p class="small muted">64-bit Linux, like Ubuntu, Debian or Fedora<?= isset($pl['linux_appimage']) ? ' · ' . e(human_size($pl['linux_appimage']['size'])) : '' ?></p>
             <?php if (isset($pl['linux_appimage'])): $f = $pl['linux_appimage']; ?>
-              <a class="button primary big" href="<?= e($f['url']) ?>" rel="nofollow noopener noreferrer">Download for Linux (AppImage)</a>
+              <a class="button primary big" href="download.php?to=linux" rel="nofollow">Download for Linux (AppImage)</a>
             <?php elseif (isset($pl['linux_deb'])): $f = $pl['linux_deb']; ?>
-              <a class="button primary big" href="<?= e($f['url']) ?>" rel="nofollow noopener noreferrer">Download for Ubuntu and Debian (.deb)</a>
+              <a class="button primary big" href="download.php?to=deb" rel="nofollow">Download for Ubuntu and Debian (.deb)</a>
             <?php endif; ?>
             <div class="fingerprint">
               <p class="fp-label"><?= SHIELD_ICON ?>File fingerprint (SHA-256)</p>
               <?php if (isset($pl['linux_appimage'])): ?><code class="hash"><?= e(strtoupper($pl['linux_appimage']['sha256'])) ?></code><?php endif; ?>
-              <p class="small muted">To check: run <code>sha256sum</code> on the file. It must match this and <a href="<?= e(SOURCE_URL) ?>/releases/tag/v<?= e($r['version']) ?>" rel="noopener noreferrer">GitHub</a>.<?php if (isset($pl['linux_deb'])): ?> Prefer a package? Get the <a href="<?= e($pl['linux_deb']['url']) ?>" rel="nofollow noopener noreferrer">.deb for Ubuntu and Debian</a> (<?= e(human_size($pl['linux_deb']['size'])) ?>); its fingerprint is on GitHub.<?php endif; ?></p>
+              <p class="small muted">To check: run <code>sha256sum</code> on the file. It must match this and <a href="<?= e(SOURCE_URL) ?>/releases/tag/v<?= e($r['version']) ?>" rel="noopener noreferrer">GitHub</a>.<?php if (isset($pl['linux_deb'])): ?> Prefer a package? Get the <a href="download.php?to=deb" rel="nofollow">.deb for Ubuntu and Debian</a> (<?= e(human_size($pl['linux_deb']['size'])) ?>); its fingerprint is on GitHub.<?php endif; ?></p>
             </div>
           </div>
           <?php endif; ?>
