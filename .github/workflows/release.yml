@@ -270,15 +270,17 @@ jobs:
           # Only a version that's new (or replaced) on sompio.org gets announced
           if [ "$code" = "200" ]; then echo "NEW_VERSION=1" >> "$GITHUB_ENV"; fi
       - name: Announce it on Discord
-        # Posts the release notes to the channel behind the DISCORD_WEBHOOK secret. Without that secret,
-        # or when this version was already on sompio.org, nothing is posted.
+        # Posts the release notes to the channels behind the DISCORD_WEBHOOK and DISCORD_WEBHOOK_2 secrets
+        # (for example the testers' server and the public Sompio server). Secrets that aren't set are
+        # skipped; when this version was already on sompio.org, nothing is posted.
         if: env.NEW_VERSION == '1' && (github.event_name != 'workflow_dispatch' || inputs.announce)
         env:
-          HOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          HOOK1: ${{ secrets.DISCORD_WEBHOOK }}
+          HOOK2: ${{ secrets.DISCORD_WEBHOOK_2 }}
         run: |
-          HOOK=$(printf '%s' "$HOOK" | tr -d ' \r\n\t')
-          if [ -z "$HOOK" ]; then echo "No DISCORD_WEBHOOK secret: skipping the announcement"; exit 0; fi
-          echo "::add-mask::$HOOK"
+          HOOK1=$(printf '%s' "$HOOK1" | tr -d ' \r\n\t'); HOOK2=$(printf '%s' "$HOOK2" | tr -d ' \r\n\t')
+          if [ -z "$HOOK1$HOOK2" ]; then echo "No Discord webhook secrets: skipping the announcement"; exit 0; fi
+          [ -n "$HOOK1" ] && echo "::add-mask::$HOOK1"; [ -n "$HOOK2" ] && echo "::add-mask::$HOOK2"
           python3 - <<'PY' > discord.json
           import json, os
           version = os.environ["VERSION"]
@@ -293,5 +295,8 @@ jobs:
                   f"Open Sompio and click **Update now**, or download it at <https://sompio.org/download.php>")
           print(json.dumps({"username": "Sompio", "allowed_mentions": {"parse": []}, "content": text[:2000]}))
           PY
-          code=$(curl -sS -o reply.txt -w '%{http_code}' -H "Content-Type: application/json" --data @discord.json "$HOOK")
-          if [ "$code" != "204" ] && [ "$code" != "200" ]; then cat reply.txt; echo "::warning::Discord answered $code; the release itself is fine"; fi
+          for HOOK in "$HOOK1" "$HOOK2"; do
+            [ -z "$HOOK" ] && continue
+            code=$(curl -sS -o reply.txt -w '%{http_code}' -H "Content-Type: application/json" --data @discord.json "$HOOK" || echo 000)
+            if [ "$code" != "204" ] && [ "$code" != "200" ]; then cat reply.txt; echo "::warning::Discord answered $code; the release itself is fine"; fi
+          done
