@@ -10,6 +10,9 @@ const GUIDES = [
     ['delete-discord-messages.php', 'How to delete your old Discord messages', 'Discord has no "delete all" button, and deleting your account leaves your messages behind. What actually works, step by step.', 'Discord', 6],
     ['discord-data-package.php', "What's in your Discord data package", 'Every message you ever sent, and more. How to request your copy, what each folder holds, and what to look for.', 'Discord', 4],
     ['delete-reddit-comments.php', 'How to delete your old Reddit posts and comments', 'Find the posts that give away too much, delete them properly, and know what deleting your account does and doesn\'t do.', 'Reddit', 5],
+    ['find-passwords-in-old-chats.php', "How to find passwords you've shared in old chats", 'The Wi-Fi password for a guest, a login for family, a note to yourself. Where passwords hide in chats, mail and notes, and how to make them harmless.', 'Passwords', 5],
+    ['move-passwords-out-of-browser.php', 'How to move your passwords out of Chrome, Edge or Firefox', 'Export what your browser saved, bring it into a password manager, and clean up without leaving an unprotected copy behind.', 'Passwords', 5],
+    ['remove-location-from-photos.php', 'How to remove the location from your photos', 'Phones save where each photo was taken. How to check, remove it on any computer or phone, and stop it being saved.', 'Photos', 5],
     ['make-companies-delete-your-data.php', 'How to make companies delete your data', 'The GDPR gives you the right to see and erase what companies hold about you. How to ask, what they must do, and what to do if they ignore you.', 'Your rights', 6],
 ];
 

@@ -2,7 +2,7 @@
 // Guides: one card per guide. The list itself lives in GUIDES (private/layout.php).
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
-page_head('Guides · Sompio', 'Free, step-by-step guides to finding and removing what you\'ve shared online: Discord, Reddit, and making companies delete your data.');
+page_head('Guides · Sompio', 'Free, step-by-step guides to finding and removing what you\'ve shared online: Discord, Reddit, passwords in old chats, photo locations, and making companies delete your data.');
 site_header('guide');
 ?>
   <main class="wrap guides-page">
