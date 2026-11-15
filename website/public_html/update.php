@@ -12,9 +12,6 @@ if ($token === '' || !hash_equals($token, (string) ($_SERVER['HTTP_X_SOMPIO_UPDA
     exit;
 }
 header('Cache-Control: private, no-store');
-if (!isset($_GET['get'])) {
-    count_stat('update_check');
-}
 $r = latest_release();
 $sig = $r ? @file_get_contents($r['path'] . '.sig') : false;
 if ($r === null || $sig === false) {

@@ -68,7 +68,6 @@ site_header('privacy');
 
         <h3>Protection against abuse</h3>
         <p>To stop spam and runaway downloads, we briefly count sign-ups, bug reports and downloads per network. We don't store your internet (IP) address itself, only a scrambled code made from it, and only for one hour.</p>
-        <p>We also keep daily totals: how many times Sompio was downloaded for each system, and how many update checks installed copies made. These are plain numbers per day, with nothing about who, where from or with what.</p>
 
         <h3>When Sompio checks for updates</h3>
         <p>Sompio asks sompio.org for one small file with the newest version number, every few hours or when you click <em>Check now</em>. The request contains nothing about you or your data. You can switch this off in Sompio's Security settings.</p>

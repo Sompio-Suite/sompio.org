@@ -22,10 +22,6 @@ return [
     // one. Leave it empty until then; tor.php explains how to visit with Tor Browser meanwhile.
     'onion' => '',
 
-    // Opens the private numbers page: sompio.org/stats.php?key=THIS. At least 16 characters;
-    // empty keeps the page switched off.
-    'stats_key' => '',
-
     // The newest setup file in private/releases is offered for download; its version number is
     // read from the file name (Sompio_0.7.1_x64-setup.exe).
 ];
