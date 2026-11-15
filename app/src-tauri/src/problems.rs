@@ -50,10 +50,10 @@ pub fn log_problem(text: String) {
 
 #[derive(Serialize)]
 pub struct Details {
-    version: String,
-    os: String,
+    pub(crate) version: String,
+    pub(crate) os: String,
     log: String,
-    recent: Vec<String>,
+    pub(crate) recent: Vec<String>,
 }
 
 /// What to paste into a bug report: version, system and the last lines of the log.

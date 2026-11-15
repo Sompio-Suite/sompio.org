@@ -56,6 +56,7 @@ site_header('docs');
               <tr><td>Sompio checks for updates (every few hours, or when you click <em>Check now</em>; can be switched off in Security)</td><td>sompio.org</td><td>A request for one small file with the newest version number. Nothing about you or your data. Updates install only when you click <em>Update now</em>, and only if they're signed by us.</td></tr>
               <tr><td>You click <em>Check for breaches</em> in the Vault</td><td>Have I Been Pwned, the public breach database</td><td>The first 5 characters of a scrambled fingerprint of a password. Never the password itself.</td></tr>
               <tr><td>You connect Trace to your Telegram or email</td><td>Telegram or your email provider</td><td>Your login, to read the messages you sent and delete the ones you choose. Nothing is uploaded anywhere else.</td></tr>
+              <tr><td>You press <em>Send</em> in <em>Report a bug</em></td><td>sompio.org, which emails it to us</td><td>What you wrote, which part of Sompio it's about, Sompio's version and your system. Only if you tick them: your email address, the last lines of the problems log (error messages, with your user name taken out) and a screenshot you chose. You see it all before sending.</td></tr>
               <tr><td>You click a search, a download page or a company's form in Trace</td><td>That website, in your own browser</td><td>Only what you click. The site sees what you search for, as if you typed it there yourself.</td></tr>
             </tbody>
           </table>
@@ -175,7 +176,7 @@ site_header('docs');
 
       <div class="docs-end">
         <a class="button primary" href="guides.php">Guides: delete what you've shared</a>
-        <a class="button" href="feedback.php">Send feedback</a>
+        <a class="button" href="feedback.php">Report a bug</a>
       </div>
     </article>
   </main>

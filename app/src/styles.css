@@ -531,6 +531,11 @@ svg.brand-mark .sun-bottom { fill: var(--accent); }
   word-break: break-all;
 }
 .add-key textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.report-form { display: grid; gap: 1.1rem; padding: 1.4rem; max-width: 760px; }
+.report-form .field-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.report-form select { width: 100%; }
+.report-form input[type="email"] { max-width: 26rem; }
+.error-text { color: var(--risk-high); font-size: var(--t-xs); }
 .success { color: var(--ok); font-weight: 600; }
 .plain-table { width: 100%; border-collapse: collapse; }
 .plain-table th { text-align: left; font-size: var(--t-xs); color: var(--ink-3); font-weight: 650; padding: 0.7rem 1.1rem 0.4rem; }

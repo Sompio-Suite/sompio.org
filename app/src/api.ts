@@ -344,6 +344,8 @@ export const api = {
   logProblem: (text: string) => call<void>("log_problem", { text }),
   appDetails: () => call<{ version: string; os: string; log: string; recent: string[] }>("app_details"),
   openProblemsFolder: () => call<void>("open_problems_folder"),
+  /** Sends a bug report to sompio.org. Only called when the person presses Send. */
+  sendBugReport: (report: BugReport) => call<{ message: string; id: string }>("send_bug_report", { report }),
   vaultAddAttachment: (id: string, path: string) => call<string>("vault_add_attachment", { id, path }),
   vaultSaveAttachment: (id: string, name: string, path: string) => call<void>("vault_save_attachment", { id, name, path }),
   vaultRemoveAttachment: (id: string, name: string) => call<void>("vault_remove_attachment", { id, name }),
@@ -390,6 +392,22 @@ export async function pickPackage(folder: boolean): Promise<string | null> {
           ],
         },
   );
+  return typeof picked === "string" ? picked : null;
+}
+
+export interface BugReport {
+  area: string;
+  kind: string;
+  message: string;
+  contact: string;
+  details: boolean;
+  screenshot: string | null;
+}
+
+export async function pickScreenshot(): Promise<string | null> {
+  if (!inDesktopApp) return "C:\\Users\\you\\Pictures\\screenshot.png";
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  const picked = await open({ title: "Choose a screenshot", filters: [{ name: "Pictures", extensions: ["png", "jpg", "jpeg", "webp"] }] });
   return typeof picked === "string" ? picked : null;
 }
 

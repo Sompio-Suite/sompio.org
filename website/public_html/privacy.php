@@ -1,5 +1,5 @@
 <?php
-// Privacy statement for sompio.org (the website, the update sign-up, beta downloads and feedback, and the
+// Privacy statement for sompio.org (the website, the update sign-up, beta downloads and bug reports, and the
 // update check). The Sompio app itself is covered in the documentation: it keeps everything on your computer.
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
@@ -22,7 +22,7 @@ site_header('privacy');
     <article class="docs-body">
       <p class="eyebrow">Last updated 14 November 2026 (the beta is open to everyone: no tester portal, and no cookies)</p>
       <h1>Privacy statement</h1>
-      <p class="lead">This page explains what sompio.org collects about you, why, how long it's kept, and how to have it removed. It covers this website, the update sign-up, beta downloads and feedback, and Sompio's update check.</p>
+      <p class="lead">This page explains what sompio.org collects about you, why, how long it's kept, and how to have it removed. It covers this website, the update sign-up, beta downloads and bug reports, and Sompio's update check.</p>
 
       <section id="short">
         <h2>In short</h2>
@@ -52,21 +52,22 @@ site_header('privacy');
           <li><strong>Where:</strong> only as an email in our mailbox. Nothing is kept on the web server, except briefly if mail is down, until the email can go out.</li>
         </ul>
 
-        <h3>When you send feedback</h3>
+        <h3>When you report a bug</h3>
+        <p>You send reports from inside Sompio, with "Report a bug" in the menu, or by email. The app sends nothing until you press Send, and shows you everything it will send first.</p>
         <ul class="points">
-          <li><strong>What:</strong> your message, the part of Sompio it's about, and anything optional you add: a name or nickname, an email address for a reply, bug report details and a screenshot. Bug report details come from Sompio's "Copy details for a bug report" and contain the app's version, your Windows version and recent app messages. Sompio takes your Windows user name out of folder paths in these details.</li>
+          <li><strong>What:</strong> your message, the part of Sompio it's about, Sompio's version and your system (for example "windows 10.0.22631"), and anything optional you add: an email address for a reply, technical details and a screenshot. Technical details are the last lines of Sompio's problems log: error messages only, with your computer's user name taken out of folder paths.</li>
           <li><strong>Why:</strong> to find and fix problems, and to reply if you asked us to.</li>
-          <li><strong>Legal basis:</strong> our legitimate interest in improving Sompio, which you choose to help with by sending feedback.</li>
+          <li><strong>Legal basis:</strong> our legitimate interest in improving Sompio, which you choose to help with by sending a report.</li>
           <li><strong>How long:</strong> until the issue is dealt with, and at most six months after the beta ends.</li>
           <li><strong>Where:</strong> only as an email in our mailbox, with your screenshot attached. Nothing is kept on the web server, except briefly if mail is down.</li>
         </ul>
-        <p>Please don't put real passwords, bank details or other sensitive information in feedback or screenshots.</p>
+        <p>Please don't put real passwords, bank details or other sensitive information in reports or screenshots.</p>
 
         <h3>When you download Sompio</h3>
         <p>Nothing is stored about you, apart from the count described next.</p>
 
         <h3>Protection against abuse</h3>
-        <p>To stop spam and runaway downloads, we briefly count sign-ups, feedback messages and downloads per network. We don't store your internet (IP) address itself, only a scrambled code made from it, and only for one hour.</p>
+        <p>To stop spam and runaway downloads, we briefly count sign-ups, bug reports and downloads per network. We don't store your internet (IP) address itself, only a scrambled code made from it, and only for one hour.</p>
 
         <h3>When Sompio checks for updates</h3>
         <p>Sompio asks sompio.org for one small file with the newest version number, every few hours or when you click <em>Check now</em>. The request contains nothing about you or your data. You can switch this off in Sompio's Security settings.</p>

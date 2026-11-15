@@ -3,7 +3,7 @@ HOW TO TEST SOMPIO
 
 Thank you for testing! Sompio is in open beta for Windows, Mac and Linux. Everything is
 unlocked, free, until launch. Everything you put in it stays on your computer: nothing is sent
-to us, and there's no account.
+to us unless you send a bug report, and there's no account.
 
 Download it from https://sompio.org/download.php. The page shows the steps for your system.
 
@@ -86,13 +86,14 @@ Calendar
 
 4. REPORTING A PROBLEM
 ----------------------
-Use the feedback form: https://sompio.org/feedback.php
+Click "Report a bug" in the menu on the left. Write what you did and what happened, and add a
+screenshot if you can: it helps a lot. Nothing is sent until you press Send.
 
-When something goes wrong, Sompio writes a short line about it to a problems log on your
-computer. It only holds error messages, never your passwords, messages or files.
-  1. Open Security (in the menu) and scroll to "Something wrong?".
-  2. Click "Copy details for a bug report" and paste it into the feedback form.
-  3. Add what you did and what happened. A screenshot helps a lot.
+Leave "Add technical details" ticked: it adds the last lines of Sompio's problems log, a short
+list of error messages on your computer. It never holds your passwords, messages or files, and
+"Show them" lets you see exactly what goes along.
+
+Can't use the button (for example, Sompio won't start)? Email hello@sompio.org.
 
 If Sompio won't start at all, the log is here:
   Windows: %LOCALAPPDATA%\app.sompio.desktop\problems.log

@@ -103,7 +103,7 @@ site_header('home');
         <p>The beta is open to everyone, with everything unlocked until launch. When Sompio launches, you get the 30-day free trial on top.</p>
         <ul class="ticks">
           <li><a href="download.php">Download the beta</a> for <?= e(systems_text()) ?></li>
-          <li>Found a problem or have an idea? <a href="feedback.php">Tell us</a>: it decides what gets fixed first</li>
+          <li>Found a problem or have an idea? Use <a href="feedback.php">Report a bug</a> in Sompio's menu: it decides what gets fixed first</li>
           <li>New versions come to you inside Sompio</li>
         </ul>
       </div>

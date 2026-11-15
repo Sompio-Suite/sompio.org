@@ -125,7 +125,7 @@ function site_footer(): void
         <a href="docs.php">Documentation</a>
         <a href="guides.php">Guides</a>
         <a href="<?= e(SOURCE_URL) ?>" class="gh-link" rel="noopener noreferrer"><?= GITHUB_ICON ?>Source code</a>
-        <a href="feedback.php">Feedback</a>
+        <a href="feedback.php">Report a bug</a>
         <a href="security.php">Security</a>
         <a href="privacy.php">Privacy</a>
         <a href="mailto:hello@sompio.org">hello@sompio.org</a>

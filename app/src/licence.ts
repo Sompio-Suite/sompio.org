@@ -4,8 +4,6 @@ import { date } from "./format";
 const DAY = 86_400_000;
 /** Where keys are bought. */
 export const BUY_URL = "https://sompio.org/pricing.php";
-/** Where anyone can report a problem or idea during the beta. */
-export const FEEDBACK_URL = "https://sompio.org/feedback.php";
 /** A forever key holds this many days. */
 export const FOREVER_DAYS = 65535;
 /** Access that ends more than 100 years from now came from a forever key. */

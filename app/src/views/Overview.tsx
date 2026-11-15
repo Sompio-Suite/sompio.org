@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, openExternal, type LicenceStatus, type Occurrence, type ScanSummary } from "../api";
 import { date, n, plural } from "../format";
 import Icon from "../Icon";
-import { accessText, BUY_URL, FEEDBACK_URL, SUITE } from "../licence";
+import { accessText, BUY_URL, SUITE } from "../licence";
 import type { View } from "../App";
 
 interface Props {
@@ -36,11 +36,11 @@ export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
             <span>
               Your 30-day free trial starts when Sompio launches. It's a beta, so things can still go wrong: keep a copy of
               your passwords (Vault, then Auto-type, import and export, then Save as KeePass file) and your recovery sheet.
-              Found a problem or have an idea? Send it with the button.
+              Found a problem or have an idea? Tell us with Report a bug.
             </span>
           </div>
           <div className="notice-actions">
-            <button onClick={() => openExternal(FEEDBACK_URL).catch(() => {})}>Send feedback</button>
+            <button onClick={() => onGo("report")}>Report a bug</button>
           </div>
         </div>
       )}

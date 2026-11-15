@@ -47,7 +47,7 @@ site_header('download');
         <div class="beta-note">
           <h2>It's a beta</h2>
           <p>Sompio works, but things can still break or change. Two habits keep you safe: in Vault, save a copy of your passwords now and then (<em>Auto-type, import and export</em>, then <em>Save as KeePass file</em>), and keep the recovery sheet Sompio gives you when you set up the lock. Nobody can reset the lock for you, not even us.</p>
-          <p>Found a problem, or have an idea? <a href="feedback.php">Tell us</a>. It decides what gets fixed first.</p>
+          <p>Found a problem, or have an idea? Click <strong>Report a bug</strong> in Sompio's menu, or <a href="feedback.php">see other ways</a>. It decides what gets fixed first.</p>
         </div>
       </div>
       <div class="card download">
@@ -125,7 +125,7 @@ site_header('download');
           </li>
           <li>
             <h3>3. If Microsoft Defender removes the file</h3>
-            <p>Rarely, Defender quarantines a new unsigned program by mistake. If that happens, don't turn off your antivirus. <a href="feedback.php">Tell us</a>, so we can send it to Microsoft as a false alarm.</p>
+            <p>Rarely, Defender quarantines a new unsigned program by mistake. If that happens, don't turn off your antivirus. Email <a href="mailto:hello@sompio.org">hello@sompio.org</a>, so we can send it to Microsoft as a false alarm.</p>
           </li>
           <li>
             <h3>4. Set up the lock</h3>

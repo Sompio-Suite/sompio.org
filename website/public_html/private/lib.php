@@ -190,3 +190,26 @@ function signup_stamp(): string
 }
 
 require_once PRIVATE_DIR . '/layout.php';
+
+/**
+ * Sales spam that gets past the other checks: look-alike "sompio" addresses, the usual
+ * search-ranking pitches, and messages that are mostly links to other websites.
+ */
+function looks_like_spam(string $contact, string $text): bool
+{
+    $domain = strtolower((string) substr(strrchr($contact, '@') ?: '', 1));
+    if ($domain !== '' && str_contains($domain, 'sompio') && $domain !== 'sompio.org') {
+        return true;
+    }
+    if (preg_match('/search index|\bseo\b|backlink|google rank|rank (higher|first)|first page of google|submit your (site|domain|website)|(add|register|submit) sompio\.org|guest post|web traffic|more traffic|casino/i', $text)) {
+        return true;
+    }
+    // Web addresses other than our own and the places a bug report might name
+    preg_match_all('/\b(?:https?:\/\/)?(?:[a-z0-9-]+\.)+[a-z]{2,}\b/i', $text, $m);
+    $ours = '/(^|\.)(sompio\.org|github\.com|discord\.com|reddit\.com|google\.com|microsoft\.com|apple\.com|mozilla\.org)$/i';
+    $other = array_filter($m[0], function (string $u) use ($ours) {
+        $host = preg_replace('#^https?://#i', '', $u);
+        return !preg_match($ours, $host) && !preg_match('/\.(png|jpe?g|webp|txt|log|exe|dmg|deb|appimage|kdbx|csv|json|ics|zip|mbox|html?|php|js|ts|rs)$/i', $host);
+    });
+    return count(array_unique(array_map('strtolower', $other))) >= 2;
+}

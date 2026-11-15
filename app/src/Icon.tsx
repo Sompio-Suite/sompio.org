@@ -13,6 +13,7 @@ const PATHS: Record<string, string> = {
   ticket: "M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM15 7v10",
   sparkle: "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6",
   external: "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6",
+  bug: "M9 7.5a3 3 0 0 1 6 0M8 9h8v5a4 4 0 0 1-8 0zM12 9v9M3.5 12.5H8M16 12.5h4.5M5 7l3 2.2M19 7l-3 2.2M5 18.5l3.2-2.2M19 18.5l-3.2-2.2",
   book: "M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5",
   browser: "M3 5h18v14H3zM3 9h18M6 7h.01M8.5 7h.01",
   folder: "M3 6h6l2 2h10v11H3z",

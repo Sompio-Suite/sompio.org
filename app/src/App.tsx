@@ -18,13 +18,14 @@ import Calendar from "./views/Calendar";
 import Vault from "./views/Vault";
 import { DOCS_URL } from "./views/VaultTools";
 import Samples from "./views/Samples";
+import ReportBug from "./views/ReportBug";
 import { BUY_URL, SUITE, accessText, passEnding } from "./licence";
 import { date } from "./format";
 import { autoCheckEnabled, checkForUpdate, dismissUpdate, dueForCheck, updateDismissed, type UpdateInfo } from "./updates";
 
 /** Suite pages, then Clean's pages. */
 export type View =
-  | "overview" | "calendar" | "vault" | "licences" | "security" | "samples"
+  | "overview" | "calendar" | "vault" | "licences" | "security" | "samples" | "report"
   | "home" | "review" | "requests" | "messages" | "sources" | "settings";
 const CLEAN_VIEWS: View[] = ["home", "review", "requests", "messages", "sources", "settings"];
 export interface Jump { channelId: string; messageId?: string }
@@ -267,6 +268,7 @@ export default function App() {
         {navButton("samples", "Samples", "sparkle")}
         {navButton("security", "Security", "lock")}
         {navButton("licences", "Licences", "ticket")}
+        {navButton("report", "Report a bug", "bug")}
         <button className="nav" aria-label="Documentation (opens sompio.org)" title="How Sompio works, on sompio.org" onClick={() => openExternal(DOCS_URL).catch(() => {})}>
           <Icon name="book" />
           <span className="label">Documentation</span>
@@ -353,6 +355,7 @@ export default function App() {
         )}
         {view === "overview" && <Overview licence={licence} scan={scan} cleanReady={ready} onGo={setView} />}
         {view === "licences" && <Licences licence={licence} onChanged={setLicence} />}
+        {view === "report" && <ReportBug />}
         {view === "security" && (
           <Security
             status={lock}

@@ -7,6 +7,7 @@ mod vault;
 mod samples;
 mod problems;
 mod ocr;
+mod report;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -978,6 +979,7 @@ pub fn run() {
             samples::cal_add_samples,
             problems::log_problem,
             problems::app_details,
+            report::send_bug_report,
             problems::open_problems_folder,
         ])
         .run(context)
