@@ -1,9 +1,2 @@
-Now also for Mac and Linux (beta). Not yet on those systems: auto-type into other apps, and text recognition in pictures.
-Open beta: all features are unlocked free of charge until launch. The 30-day trial starts at launch.
-Vault: guided import of passwords saved in Chrome, Edge, Brave and Firefox.
-Vault: the health check flags saved passwords that also appear in your own messages and files.
-Trace: start with sources that take minutes (PC folders, mailbox, Telegram, WhatsApp), with reminders for platform exports you have requested.
-Trace: new detections for national ID numbers, passport numbers, 2FA backup codes, recovery phrases, dates of birth, number plates and precise locations.
-Trace: bank accounts and ID numbers from more countries, including UK, US, Germany, France, Spain, Italy and Poland.
-Trace: optional text recognition for screenshots and scans, and location checks for photos. Both run only when selected for a scan.
-Calendar: add a reminder in one line, for example "Dentist Tue 15:00". Import events from a calendar file (.ics).
+Report a bug from inside Sompio: "Report a bug" in the menu sends your message, with an optional screenshot and technical details, straight to us. You see everything before it is sent, and nothing is sent until you press Send.
+The feedback form on the website is replaced by this button. You can still email hello@sompio.org.
