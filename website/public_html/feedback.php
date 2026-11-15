@@ -4,7 +4,6 @@
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
 
-$c = config();
 page_head('Report a bug · Sompio', 'How to tell us what broke, what confused you, or what you\'d like in Sompio.');
 site_header('feedback');
 ?>
@@ -23,8 +22,7 @@ site_header('feedback');
 
     <section class="card">
       <h2>By email</h2>
-      <p>Write to <a href="mailto:hello@sompio.org">hello@sompio.org</a>. A screenshot helps a lot, but please don't show real passwords or personal details.
-        <?php if (!empty($c['discord'])): ?>You can also post in our <a href="<?= e($c['discord']) ?>" rel="noopener noreferrer">Discord</a>.<?php endif; ?></p>
+      <p>Write to <a href="mailto:hello@sompio.org">hello@sompio.org</a>. A screenshot helps a lot, but please don't show real passwords or personal details.</p>
     </section>
 
     <p class="small muted">How we handle reports: see the <a href="privacy.php#what">privacy statement</a>.</p>
