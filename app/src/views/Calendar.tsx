@@ -134,7 +134,7 @@ export default function Calendar({ readOnly, onAddKey }: Props) {
       <div className="page-head">
         <div>
           <h1>Calendar</h1>
-          <p className="muted">Your reminders, encrypted with your lock. They pop up on time, even while Sompio is locked.</p>
+          <p className="muted">Your reminders, encrypted on this computer. They pop up on time, even while Vault and Trace are locked.</p>
         </div>
         <div className="toolbar">
           <button className="primary" onClick={() => setEditing("new")} disabled={readOnly}><Icon name="plus" size={16} />New reminder</button>

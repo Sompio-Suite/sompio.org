@@ -30,7 +30,7 @@ has a made-up person, Alex Rivers, for everything (see step 2).
 
 2. THE SAMPLES PAGE
 -------------------
-Open "Samples" in the menu on the left. "Add Alex's sample data" fills all three tools at once.
+Click ? at the top right, then "Samples". "Add Alex's sample data" fills all three tools at once.
 It also has, per tool:
   - Vault: sample entries (2FA codes, weak and reused passwords, auto-type tests), plus KeePass
     files and CSV exports to import. The KeePass sample password is: sample-password
@@ -45,10 +45,11 @@ Sample files are saved to a "Sompio samples" folder in your Documents, which ope
 3. WHAT TO TRY
 --------------
 Lock
-  - Lock Vault and Trace ("Lock now" in the menu, or wait for the idle timer) and unlock again.
+  - Lock Vault and Trace (click "Lock" at the top right, or wait for the idle timer) and unlock again.
     Calendar should stay open while they're locked.
   - Try a wrong password, and unlocking with the recovery code.
-  - If you have a YubiKey: Security, "Add a YubiKey", then unlock with it.
+  - If you have a YubiKey: the gear at the top right, Security and updates, "Add a YubiKey", then
+    unlock with it.
 
 Vault
   - Bring in passwords from your browser: Vault walks you through exporting them from Chrome,
@@ -87,7 +88,7 @@ Calendar
 
 4. REPORTING A PROBLEM
 ----------------------
-Click "Report a bug" in the menu on the left. Write what you did and what happened, and add a
+Click ? at the top right, then "Report a bug". Write what you did and what happened, and add a
 screenshot if you can: it helps a lot. Nothing is sent until you press Send.
 
 Leave "Add technical details" ticked: it adds the last lines of Sompio's problems log, a short

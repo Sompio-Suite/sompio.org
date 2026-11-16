@@ -91,6 +91,17 @@ export default function App() {
   const [installing, setInstalling] = useState<number | null | "error">(null);
   // A new version found by the automatic check pops up once; "Later" keeps it in the sidebar only
   const [updatePopup, setUpdatePopup] = useState(false);
+  const [menu, setMenu] = useState<"help" | "settings" | null>(null);
+  // Close the small menus on a click elsewhere or Escape
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !(e.target as Element).closest(".menu-wrap")) setMenu(null);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
+  }, [menu]);
   useEffect(() => {
     const run = () => {
       if (autoCheckEnabled() && dueForCheck())
@@ -256,58 +267,64 @@ export default function App() {
 
   return (
     <div className="shell">
-      <nav className="rail" aria-label="Sections">
+      <header className="topbar">
         <div className="brand">
-          <Logo size={28} />
+          <Logo size={24} />
           <span className="brand-name">sompio</span>
         </div>
-        {navButton("overview", "Overview", "grid")}
-        {navButton("vault", "Vault", "key", vaultLocked || !unlocked ? <Icon name="lock" size={14} /> : undefined)}
-        {navButton("home", "Trace", "review", cleanLocked || !unlocked ? <Icon name="lock" size={14} /> : toReview > 0 && !inClean ? <span className="count" aria-label={`${toReview} to review`}>{n(toReview)}</span> : undefined)}
-        {navButton("calendar", "Calendar", "calendar", calendarLocked ? <Icon name="lock" size={14} /> : undefined)}
-        {SUITE.filter((a) => !a.ready).map((a) => navButton(a.key as View, a.name, a.icon, <span className="soon-dot" title={a.when} />))}
-        <div className="rail-spacer" />
-        {lock.set_up && unlocked && (
-          <button className="nav" aria-label="Lock Vault and Trace" title="Lock Vault and Trace now" onClick={lockNow}>
-            <Icon name="lock" />
-            <span className="label">Lock now</span>
-          </button>
-        )}
-        {navButton("samples", "Samples", "sparkle")}
-        {navButton("security", "Security", "lock")}
-        {navButton("licences", "Licences", "ticket")}
-        {navButton("report", "Report a bug", "bug")}
-        <button className="nav" aria-label="Documentation (opens sompio.org)" title="How Sompio works, on sompio.org" onClick={() => openExternal(DOCS_URL).catch(() => {})}>
-          <Icon name="book" />
-          <span className="label">Documentation</span>
-          <Icon name="external" size={13} />
-        </button>
-        {update && (
-          <div className="update-card" role="status">
-            <strong>Sompio {update.version} is ready</strong>
-            {installing === null && <span>Your data stays as it is.</span>}
-            {typeof installing === "number" && <span>Downloading{installing ? ` ${installing}%` : "…"}. Sompio restarts by itself.</span>}
-            {installing === "error" && <span>The update didn't install. Try again later.</span>}
-            <button className="primary" disabled={typeof installing === "number"} onClick={installUpdate}>
-              {typeof installing === "number" ? "Updating…" : "Update now"}
+        <nav className="tabs" aria-label="Sections">
+          {navButton("overview", "Overview", "grid")}
+          {navButton("vault", "Vault", "key", vaultLocked || !unlocked ? <Icon name="lock" size={13} /> : undefined)}
+          {navButton("home", "Trace", "review", cleanLocked || !unlocked ? <Icon name="lock" size={13} /> : toReview > 0 && !inClean ? <span className="count" aria-label={`${toReview} to review`}>{n(toReview)}</span> : undefined)}
+          {navButton("calendar", "Calendar", "calendar", calendarLocked ? <Icon name="lock" size={13} /> : undefined)}
+          {SUITE.filter((a) => !a.ready).map((a) => navButton(a.key as View, a.name, a.icon, <span className="soon-dot" title={a.when} />))}
+        </nav>
+        <div className="bar-tools">
+          {update && (
+            <button className="pill accent" onClick={() => setUpdatePopup(true)} title="Your data stays as it is">
+              <Icon name="refresh" size={14} />
+              {typeof installing === "number" ? `Updating${installing ? ` ${installing}%` : "…"}` : `Update to ${update.version}`}
             </button>
-          </div>
-        )}
-        <div className="rail-foot">
-          <Icon name="lock" size={16} />
-          {connected.length > 0 ? (
-            <div>
-              <strong>{connected.length > 1 ? "2 accounts connected" : connected[0] === "email" ? "Email connected" : "Telegram connected"}</strong>
-              Sompio goes online only to sync or delete on {connected.join(" and ")}. Nothing is uploaded.
-            </div>
-          ) : (
-            <div>
-              <strong>Offline</strong>
-              Your data never leaves this computer.
-            </div>
           )}
+          {lock.set_up ? (
+            <button
+              className="pill"
+              onClick={() => (unlocked ? lockNow() : setView("vault"))}
+              title={`${unlocked ? "Vault and Trace are open." : "Vault and Trace are locked. Calendar stays open."} ${connected.length ? `${connected.join(" and ")} connected to Trace.` : "Sompio works offline: your data never leaves this computer."}`}
+            >
+              <Icon name="lock" size={14} />
+              <span className="muted">{unlocked ? "Open" : "Locked"} ·</span> <strong>{unlocked ? "Lock" : "Unlock"}</strong>
+            </button>
+          ) : (
+            <button className="pill" onClick={() => setView("vault")} title="Vault and Trace ask for a lock the first time you open them">
+              <Icon name="lock" size={14} /><strong>Set up the lock</strong>
+            </button>
+          )}
+          <div className="menu-wrap">
+            <button className="icon-btn" aria-label="Help" aria-haspopup="menu" aria-expanded={menu === "help"} title="Help" onClick={() => setMenu(menu === "help" ? null : "help")}>
+              <span className="q">?</span>
+            </button>
+            {menu === "help" && (
+              <div className="dropdown" role="menu">
+                <button role="menuitem" onClick={() => { setMenu(null); openExternal(DOCS_URL).catch(() => {}); }}><Icon name="book" size={16} />Documentation<Icon name="external" size={12} /></button>
+                <button role="menuitem" onClick={() => { setMenu(null); setView("report"); }}><Icon name="bug" size={16} />Report a bug</button>
+                <button role="menuitem" onClick={() => { setMenu(null); setView("samples"); }}><Icon name="sparkle" size={16} />Samples</button>
+              </div>
+            )}
+          </div>
+          <div className="menu-wrap">
+            <button className={`icon-btn${view === "security" || view === "licences" ? " on" : ""}`} aria-label="Settings" aria-haspopup="menu" aria-expanded={menu === "settings"} title="Settings" onClick={() => setMenu(menu === "settings" ? null : "settings")}>
+              <Icon name="settings" size={18} />
+            </button>
+            {menu === "settings" && (
+              <div className="dropdown" role="menu">
+                <button role="menuitem" onClick={() => { setMenu(null); setView("security"); }}><Icon name="lock" size={16} />Security and updates</button>
+                <button role="menuitem" onClick={() => { setMenu(null); setView("licences"); }}><Icon name="ticket" size={16} />Licences</button>
+              </div>
+            )}
+          </div>
         </div>
-      </nav>
+      </header>
       <main>
         {ending && remindShown && (
           <div className="demo-bar pass-bar" role="status">

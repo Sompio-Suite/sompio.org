@@ -313,7 +313,7 @@ function ReportProblem() {
       <p className="muted">
         When something goes wrong, Sompio writes a short line about it to a problems log on this computer. It holds error
         messages only, never your passwords, messages or files. Your user name is left out, and it stays on this computer. Report a bug
-        (in the menu) can add these lines to your report for you, or copy them here to send by email.
+        (under ? at the top) can add these lines to your report for you, or copy them here to send by email.
       </p>
       <div className="toolbar">
         <button onClick={copy}>Copy details for a bug report</button>

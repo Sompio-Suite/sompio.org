@@ -1307,3 +1307,56 @@ svg.logo { display: block; }
 .lock-rules li { display: flex; gap: 0.55rem; align-items: flex-start; }
 .lock-rules .icon { flex: none; margin-top: 0.15rem; color: var(--accent-text); }
 .lock-step .check small { display: block; margin-top: 0.2rem; }
+
+/* ---------- Top bar (replaces the side menu) ---------- */
+.shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+.topbar {
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.45rem 1rem;
+  background: var(--rail); border-bottom: 1px solid var(--line); min-width: 0;
+}
+.topbar .brand { padding: 0 1.1rem 0 0.2rem; font-size: 1.15rem; }
+.topbar .tabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; }
+.topbar button.nav {
+  display: flex; align-items: center; gap: 0.5rem; border: 0; background: none; white-space: nowrap;
+  padding: 0.45rem 0.8rem; border-radius: var(--r-s); color: var(--ink-2); font-size: var(--t-m); font-weight: 500;
+}
+.topbar button.nav:hover { color: var(--ink); background: #e8ebee; }
+.topbar button.nav[aria-current="page"] { color: var(--ink); background: var(--nav-active); font-weight: 650; }
+.topbar button.nav .icon { width: 17px; height: 17px; }
+.topbar button.nav[aria-current="page"] .icon:first-child { color: var(--accent); }
+.topbar button.nav > .icon:last-child:not(:first-child) { color: var(--ink-3); width: 13px; height: 13px; }
+.topbar button.nav .count { margin-left: 0.1rem; min-width: 1.4rem; }
+.topbar .soon-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.bar-tools { margin-left: auto; display: flex; align-items: center; gap: 0.4rem; flex: none; }
+.pill {
+  display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface);
+  padding: 0.28rem 0.75rem; font-size: var(--t-s); color: var(--ink);
+}
+.pill .icon { color: var(--ink-3); }
+.pill:hover { border-color: var(--ink-3); }
+.pill.accent { border-color: #b9dcbc; background: var(--accent-soft, #e9f4ea); color: var(--accent-text); font-weight: 600; }
+.pill.accent .icon { color: var(--accent-text); }
+.icon-btn {
+  width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: var(--r-s);
+  background: none; color: var(--ink-2); padding: 0;
+}
+.icon-btn:hover, .icon-btn[aria-expanded="true"], .icon-btn.on { background: #e8ebee; color: var(--ink); }
+.icon-btn .q { font-weight: 700; font-size: 1.05rem; line-height: 1; }
+.menu-wrap { position: relative; }
+.dropdown {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; min-width: 220px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-m);
+  box-shadow: 0 10px 28px rgba(16, 24, 32, 0.14); padding: 0.3rem; display: grid; gap: 1px;
+}
+.dropdown button {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; border: 0; background: none;
+  padding: 0.5rem 0.65rem; border-radius: var(--r-s); color: var(--ink); font-size: var(--t-s);
+}
+.dropdown button:hover { background: var(--sunken); }
+.dropdown button .icon { color: var(--ink-3); }
+.dropdown button .icon:last-child:not(:first-child) { margin-left: auto; }
+@media (max-width: 900px) {
+  .topbar .brand-name { display: none; }
+  .pill .muted { display: none; }
+}

@@ -3,3 +3,4 @@ The lock now protects Vault and Trace, and is set up the first time you open one
 The key picture is optional and recommended. Without it, your password opens Sompio on this computer only. You can save a key picture later under Security.
 "Lock now" in the menu locks Vault and Trace. Calendar and reminders keep going.
 Existing users: nothing changes for your lock. Calendar moves to its own protection the next time you unlock.
+The menu moves to the top: Overview, Vault, Trace and Calendar as tabs, with the lock, Help (?) and Settings (gear) on the right.
