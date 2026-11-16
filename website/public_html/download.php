@@ -219,5 +219,5 @@ site_header('download');
       <a class="button support-button" href="<?= e(SUPPORT_URL) ?>" rel="noopener noreferrer"><?= HEART_ICON ?>Support on Ko-fi</a>
     </section>
   </main>
-<script src="os.js?v=1" defer></script>
+<script src="<?= asset('os.js') ?>" defer></script>
 <?php site_footer(); ?>

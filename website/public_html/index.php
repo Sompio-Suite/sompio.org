@@ -19,7 +19,7 @@ site_header('home');
           <p class="small muted">Free for <?= e(systems_text()) ?> during the beta. Everything unlocked, no account.</p>
         </div>
         <figure class="shot shot-hero">
-          <img src="img/trace.webp" width="1280" height="780" alt="Sompio's Trace tool listing ID numbers, passport numbers, backup codes and bank numbers found in sample chats, sorted by risk.">
+          <img src="<?= asset('img/trace.webp') ?>" width="1280" height="780" alt="Sompio's Trace tool listing ID numbers, passport numbers, backup codes and bank numbers found in sample chats, sorted by risk.">
         </figure>
       </div>
     </section>
@@ -39,7 +39,7 @@ site_header('home');
             <li>Never locked in: Vault saves in the open KeePass format, so your passwords open in other apps too</li>
           </ul>
         </div>
-        <figure class="shot"><img src="img/vault.webp" width="1280" height="780" alt="Sompio Vault showing a list of sample logins in folders." loading="lazy"></figure>
+        <figure class="shot"><img src="<?= asset('img/vault.webp') ?>" width="1280" height="780" alt="Sompio Vault showing a list of sample logins in folders." loading="lazy"></figure>
       </article>
 
       <article class="feature flip">
@@ -53,7 +53,7 @@ site_header('home');
             <li>"Clean up" takes you to each message in turn, and writes the letters that make companies delete what they hold about you</li>
           </ul>
         </div>
-        <figure class="shot"><img src="img/trace.webp" width="1280" height="780" alt="Trace findings: a table of risky items with advice on what to do for each." loading="lazy"></figure>
+        <figure class="shot"><img src="<?= asset('img/trace.webp') ?>" width="1280" height="780" alt="Trace findings: a table of risky items with advice on what to do for each." loading="lazy"></figure>
       </article>
 
       <article class="feature">
@@ -67,7 +67,7 @@ site_header('home');
             <li>Routines, quiet hours and a choice of sounds</li>
           </ul>
         </div>
-        <figure class="shot"><img src="img/calendar.webp" width="1280" height="780" alt="Sompio Calendar: a reminder typed in one line, a day list, the month and what's next." loading="lazy"></figure>
+        <figure class="shot"><img src="<?= asset('img/calendar.webp') ?>" width="1280" height="780" alt="Sompio Calendar: a reminder typed in one line, a day list, the month and what's next." loading="lazy"></figure>
       </article>
     </section>
 

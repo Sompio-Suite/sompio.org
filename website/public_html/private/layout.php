@@ -2,6 +2,14 @@
 // The parts every page shares: <head>, the top menu and the footer.
 declare(strict_types=1);
 
+
+/** A file's address with its change time, so browsers and Cloudflare fetch the new copy after an upload. */
+function asset(string $path): string
+{
+    $f = dirname(__DIR__) . '/' . $path;
+    return $path . (is_file($f) ? '?v=' . filemtime($f) : '');
+}
+
 const SOURCE_URL = 'https://github.com/Sompio-Suite/sompio.org';
 /** Prices in euros, including VAT, for the pricing and terms pages waiting in private/drafts (not shown yet). */
 const PRICES = ['month' => 4, 'year' => 30, 'forever' => 50];
@@ -54,7 +62,7 @@ function page_head(string $title, string $description, bool $public = true): voi
   <meta property="og:title" content="<?= e($title) ?>">
   <meta property="og:description" content="<?= e($description) ?>">
   <meta property="og:url" content="<?= e($url) ?>">
-  <meta property="og:image" content="https://sompio.org/img/og.png">
+  <meta property="og:image" content="https://sompio.org/<?= asset('img/og.png') ?>">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Sompio: private tools for your computer. Nothing leaves it.">
