@@ -19,9 +19,10 @@ site_header('security');
     <section id="how">
       <h2>How your data is protected</h2>
       <ul class="points">
-        <li><strong>One lock, two parts.</strong> Sompio opens with your password and your key picture. Your password goes through Argon2id, a method built to make guessing slow and expensive. The key picture holds a random secret. Neither is ever sent anywhere.</li>
+        <li><strong>One lock, two parts.</strong> Vault and Trace open with your password plus a random second key: either kept in your computer's protected credential store, or saved as a key picture you keep yourself. Your password goes through Argon2id, a method built to make guessing slow and expensive. Neither is ever sent anywhere.</li>
+        <li><strong>Calendar</strong> has its own random key, kept in your computer's credential store, so it opens without your password. A backup of that key is sealed with your lock.</li>
         <li><strong>Strong, standard encryption.</strong> The keys to your data are sealed with XChaCha20-Poly1305. Your passwords are kept in the open KeePass (KDBX 4) format; Trace's and Calendar's data in encrypted databases (ChaCha20-Poly1305).</li>
-        <li><strong>A recovery code</strong>, printed once on your recovery sheet, opens the lock if you lose the picture or forget your password. Nobody else can reset the lock, not even us.</li>
+        <li><strong>A recovery code</strong>, printed once on your recovery sheet, opens the lock if you forget your password or lose the second key. Nobody else can reset the lock, not even us.</li>
         <li><strong>Nothing on our servers.</strong> There's no account and no cloud copy. sompio.org only hands out new versions; it never sees your data.</li>
         <li><strong>Signed updates.</strong> Every update is signed, and Sompio refuses one that isn't ours. Each download's fingerprint is also published on <a href="<?= e(SOURCE_URL) ?>/releases" rel="noopener noreferrer">GitHub</a>, separately from this site.</li>
         <li><strong>Open source.</strong> The full code is <a href="<?= e(SOURCE_URL) ?>" rel="noopener noreferrer">on GitHub</a>, so anyone can check what it does.</li>

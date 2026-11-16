@@ -9,6 +9,7 @@ anyhow = "1"
 zeroize = "1"
 sompio-lock = { path = "../lock" }
 sompio-clean = { path = "../clean" }
+sompio-calendar = { path = "../calendar" }
 sompio-connect = { path = "../connect" }
 serde = { version = "1.0.229", features = ["derive"] }
 

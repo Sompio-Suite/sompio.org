@@ -1,2 +1,5 @@
-Report a bug from inside Sompio: "Report a bug" in the menu sends your message, with an optional screenshot and technical details, straight to us. You see everything before it is sent, and nothing is sent until you press Send.
-The feedback form on the website is replaced by this button. You can still email hello@sompio.org.
+Sompio opens straight away. Calendar works without a password; it is encrypted and protected by your computer account.
+The lock now protects Vault and Trace, and is set up the first time you open one of them, on one screen: a password and a recovery code.
+The key picture is optional and recommended. Without it, your password opens Sompio on this computer only. You can save a key picture later under Security.
+"Lock now" in the menu locks Vault and Trace. Calendar and reminders keep going.
+Existing users: nothing changes for your lock. Calendar moves to its own protection the next time you unlock.

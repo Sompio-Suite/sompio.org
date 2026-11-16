@@ -128,8 +128,8 @@ site_header('download');
             <p>Rarely, Defender quarantines a new unsigned program by mistake. If that happens, don't turn off your antivirus. Email <a href="mailto:hello@sompio.org">hello@sompio.org</a>, so we can send it to Microsoft as a false alarm.</p>
           </li>
           <li>
-            <h3>4. Set up the lock</h3>
-            <p>Sompio walks you through it: how the lock works, then your key picture, then your password, then a recovery code. Read the first screen: nobody can reset the lock for you, not even us.</p>
+            <h3>4. Start using it</h3>
+            <p>Sompio opens straight away. The first time you open Vault or Trace, you choose a password and get a recovery code to write down. Keep that code safe: nobody can reset the lock for you, not even us.</p>
           </li>
         </ol>
       </div>

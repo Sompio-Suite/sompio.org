@@ -5425,6 +5425,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "serde",
+ "sompio-calendar",
  "sompio-clean",
  "sompio-connect",
  "sompio-lock",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, listen, passwordProblem, pickPicture, type LockStatus } from "../api";
+import { api, listen, passwordProblem, pickPicture, pickPictureSave, type LockStatus } from "../api";
 import Icon from "../Icon";
 import { autoCheckEnabled, checkForUpdate, currentVersion, setAutoCheck, updatesOn, type UpdateInfo } from "../updates";
 
@@ -10,9 +10,11 @@ interface Props {
   onLockNow: () => void;
   onChanged: () => void;
   onUpdateFound: (u: UpdateInfo | null) => void;
+  /** Opens the lock setup (shown in Vault) */
+  onSetUp: () => void;
 }
 
-export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow, onChanged, onUpdateFound }: Props) {
+export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow, onChanged, onUpdateFound, onSetUp }: Props) {
   const [version, setVersion] = useState("");
   const [auto, setAuto] = useState(autoCheckEnabled());
   const [updateNote, setUpdateNote] = useState<string | null>(null);
@@ -65,14 +67,23 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
       <div className="page-head">
         <div>
           <h1>Security</h1>
-          <p className="muted">Everything Sompio keeps is encrypted with your lock. It opens with your password and key picture.</p>
+          <p className="muted">Vault and Trace are encrypted with your lock. Calendar is encrypted too, and protected by your computer account.</p>
         </div>
-        <button onClick={onLockNow}><Icon name="lock" size={16} />Lock now</button>
+        {status.set_up && status.unlocked && <button onClick={onLockNow}><Icon name="lock" size={16} />Lock now</button>}
       </div>
 
+      {!status.set_up && (
+        <section className="setting">
+          <h3>Your lock isn't set up yet</h3>
+          <p className="muted">Vault and Trace ask you to set it up the first time you open them. It takes a minute: a password, and a recovery code to write down.</p>
+          <div className="toolbar"><button className="primary" onClick={onSetUp}>Set up the lock</button></div>
+        </section>
+      )}
+
+      {status.set_up && <>
       <section className="setting">
         <h3>Lock when I'm away</h3>
-        <p className="muted">Sompio locks itself after this long without you using it.</p>
+        <p className="muted">Vault and Trace lock themselves after this long without you using Sompio. Calendar and reminders keep going.</p>
         <select value={idleMinutes} onChange={(e) => onIdleMinutes(Number(e.target.value))}>
           {[5, 15, 30, 60].map((m) => <option key={m} value={m}>After {m} minutes</option>)}
           <option value={0}>Only when I close it</option>
@@ -83,9 +94,28 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
         <h3>Key picture on this computer</h3>
         {status.remembers_picture ? (
           <>
-            <p className="muted">This computer remembers your key picture, so you only type your password here. Forget it on a computer you share or will sell.</p>
+            <p className="muted">
+              This computer keeps your key picture, so you only type your password here. Save a copy of the picture to open Sompio on
+              another computer. Before you make this computer forget it, save a copy first, or you'll need your recovery code.
+            </p>
             <div className="toolbar">
-              <button onClick={async () => { await api.lockForgetPicture(); onChanged(); setNote({ ok: true, text: "This computer no longer remembers the key picture. You'll need it next time you unlock." }); }}>
+              <button
+                disabled={!status.unlocked}
+                title={status.unlocked ? undefined : "Unlock Vault or Trace first"}
+                onClick={async () => {
+                  try {
+                    const path = await pickPictureSave();
+                    if (!path) return;
+                    await api.lockExportPicture(path);
+                    setNote({ ok: true, text: "Key picture saved and checked. Keep a copy off this computer, and don't edit or resize it." });
+                  } catch (e) {
+                    setNote({ ok: false, text: String(e) });
+                  }
+                }}
+              >
+                Save a copy of the key picture…
+              </button>
+              <button className="quiet" onClick={async () => { await api.lockForgetPicture(); onChanged(); setNote({ ok: true, text: "This computer no longer remembers the key picture. You'll need it next time you unlock." }); }}>
                 Forget the picture on this computer
               </button>
             </div>
@@ -96,7 +126,7 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
       </section>
 
       <section className="setting">
-        <h3>Change your master password</h3>
+        <h3>Change your password</h3>
         <form className="stack-form" onSubmit={(e) => { e.preventDefault(); change(); }}>
           <label className="field"><span>Current password</span><input type="password" autoComplete="current-password" value={old} onChange={(e) => setOld(e.target.value)} /></label>
           <label className="field">
@@ -116,6 +146,7 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
           </div>
         </form>
       </section>
+      </>}
 
       {note && <div className={note.ok ? "success" : "error"} role="status">{note.text}</div>}
 
@@ -144,7 +175,7 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
         )}
       </section>
 
-      <YubiKeys status={status} onChanged={onChanged} />
+      {status.set_up && <YubiKeys status={status} onChanged={onChanged} />}
 
       <ReportProblem />
 

@@ -27,7 +27,7 @@ site_header('docs');
       <section id="what">
         <h2>What Sompio is</h2>
         <p>Sompio is a private toolkit for your computer: a password vault, a tool that finds and removes what you've shared online, and a calendar, in one program. Everything works on your own computer. There is no account to make, no cloud, and no server of ours that holds your data.</p>
-        <p>All three tools sit behind one lock, the <strong>Sompio Lock</strong>, so one password (plus your key picture) opens everything and keeps it encrypted when you're away. You unlock it with a licence key, like a game key, checked on your computer without going online.</p>
+        <p>Vault and Trace sit behind one lock, the <strong>Sompio Lock</strong>: one password opens both, and they're encrypted again when you step away. Calendar opens without a password, encrypted and protected by your computer account. You unlock it with a licence key, like a game key, checked on your computer without going online.</p>
         <div class="tools">
           <a class="tool" href="#vault"><strong>Vault</strong><span>Keeps your passwords safe, fills them in for you (also in your browser, with the Sompio extension), and tells you which ones to change first.</span></a>
           <a class="tool" href="#trace"><strong>Trace</strong><span>Finds personal information you've shared online (bank numbers, passwords, addresses…), helps you remove it, and gets companies to delete what they hold.</span></a>
@@ -40,7 +40,7 @@ site_header('docs');
         <p>Sompio is built so your information never has to leave your computer. There is no Sompio server holding your passwords, messages or calendar, so there is nothing of yours on our side that could be hacked, sold or leaked.</p>
         <ul class="points">
           <li><strong>Offline by design.</strong> Every tool works without internet. You can switch off the internet and use all of it.</li>
-          <li><strong>Encrypted on your disk.</strong> Your calendar, Trace's findings and requests, and your passwords are stored encrypted. Without your password and key picture, the files are unreadable, even to someone who copies them.</li>
+          <li><strong>Encrypted on your disk.</strong> Your calendar, Trace's findings and requests, and your passwords are stored encrypted. Someone who copies the files gets nothing readable.</li>
           <li><strong>No account, no tracking.</strong> No sign-up, no email address, no analytics, no ads, no "phone home". Sompio doesn't know who you are.</li>
           <li><strong>Pop-ups out of screenshots.</strong> Reminder pop-ups and the auto-type picker are left out of screenshots and screen sharing, so a stream or meeting doesn't show what pops up. The main window can be captured, for help and bug reports. Copied passwords stay out of Windows' clipboard history and cloud clipboard, and clear themselves after 20 seconds.</li>
           <li><strong>The browser extension stays local too.</strong> It talks only to Sompio on your computer, never to a server, and only after you allow your browser in Sompio. See <a href="#extension">Browser extension</a>.</li>
@@ -66,12 +66,13 @@ site_header('docs');
 
       <section id="lock">
         <h2>The Sompio Lock</h2>
-        <p>One lock protects all three tools, and it needs <strong>two things</strong> to open: your <strong>password</strong> (in your head) and your <strong>key picture</strong> (a file). Someone who finds only one of them gets nothing.</p>
+        <p>The lock protects Vault and Trace. You set it up the first time you open one of them, in one screen. It always needs <strong>two things</strong> to open: your <strong>password</strong> and a <strong>second key</strong>, a random secret that Sompio makes for you.</p>
         <ul class="points">
-          <li><strong>Key picture.</strong> On first start, Sompio makes a night-sky .png with a random secret hidden in its pixels. You save it wherever you like, and keep a copy off the PC (a USB stick, or your phone as a file).</li>
-          <li><strong>Recovery code.</strong> You also get a code to print or write down. It's your way back in if you lose the password or the picture.</li>
+          <li><strong>Without a key picture</strong> (the quick way), the second key stays in your computer's protected credential store. Your password then opens Sompio on this computer only; someone who copies your files, or knows your password, still can't open them elsewhere.</li>
+          <li><strong>With a key picture</strong> (recommended), the second key is also saved as a night-sky .png with the secret hidden in its pixels. Keep a copy off the computer (a USB stick, or your phone as a file): with it, you can open Sompio on another computer. You can also save the picture later, under Security.</li>
+          <li><strong>Recovery code.</strong> You also get a code to print or write down. It's your way back in if you forget the password or lose the second key.</li>
           <li><strong>YubiKey (optional).</strong> A YubiKey can stand in for the key picture.</li>
-          <li><strong>Auto-lock.</strong> Sompio locks itself after a while without use. Calendar reminders keep coming while it's locked.</li>
+          <li><strong>Auto-lock.</strong> Vault and Trace lock themselves after a while without use. Calendar stays open, and reminders keep coming.</li>
         </ul>
         <p class="callout"><strong>Nobody can reset it, not even us.</strong> That's the point: we never have your keys. Lose the password or picture <em>and</em> the recovery code, and the data can't be opened by anyone. Don't edit, crop or send the key picture through chat apps that shrink photos, because that erases the secret.</p>
       </section>
@@ -161,7 +162,7 @@ site_header('docs');
         <ul class="points">
           <li><strong>Your computer is the vault.</strong> While Sompio is unlocked, it's only as safe as the computer it runs on. No app can fully protect you from malware or someone using your unlocked computer, so keep Windows updated and lock Sompio when you step away.</li>
           <li><strong>Trace finds, you decide.</strong> It spots patterns and your watch terms, but it can miss things and occasionally flag something harmless. Deleting a message doesn't undo that others may have seen it, which is why it tells you to change leaked passwords too. Companies sometimes answer late or partly; Trace helps you follow up, but it can't force them.</li>
-          <li><strong>Backups are your job.</strong> With no cloud copy, keep your key picture and recovery code safe, and export your vault now and then.</li>
+          <li><strong>Backups are your job.</strong> With no cloud copy, keep your recovery code (and key picture, if you made one) safe, and export your vault now and then.</li>
         </ul>
         <h3>Questions</h3>
         <dl class="faq">

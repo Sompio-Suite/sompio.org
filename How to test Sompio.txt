@@ -17,12 +17,12 @@ Mac: open the .dmg and drag Sompio to Applications. The first time you open it, 
 Linux: make the AppImage runnable (right-click, Properties, "Allow executing file as program")
   and open it, or install the .deb with: sudo apt install ./Sompio_*_linux_amd64.deb
 
-When Sompio starts, it walks you through the Sompio Lock in four steps:
-  1. How the lock works: a short list of do's and don'ts. Please read it.
-  2. Make your key picture: the button saves a .png file with a secret hidden in it.
-     Put it somewhere you'll find it again (a copy off this computer is best).
-  3. Choose your password.
-  4. Write down or print the recovery code.
+Sompio opens straight away: Calendar works without a password. The first time you open Vault or
+Trace, you set up the Sompio Lock on one screen:
+  - Choose a password.
+  - Optional (recommended): tick "Also use a key picture". Sompio saves a .png file with a
+    secret hidden in it. Keep a copy off this computer; it lets you open Sompio elsewhere.
+  - Write down or print the recovery code.
 
 Please use made-up data while testing, not your real passwords or messages. The Samples page
 has a made-up person, Alex Rivers, for everything (see step 2).
@@ -45,7 +45,8 @@ Sample files are saved to a "Sompio samples" folder in your Documents, which ope
 3. WHAT TO TRY
 --------------
 Lock
-  - Lock Sompio (Security page, or wait for the idle timer) and unlock it again.
+  - Lock Vault and Trace ("Lock now" in the menu, or wait for the idle timer) and unlock again.
+    Calendar should stay open while they're locked.
   - Try a wrong password, and unlocking with the recovery code.
   - If you have a YubiKey: Security, "Add a YubiKey", then unlock with it.
 

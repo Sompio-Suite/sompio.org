@@ -171,8 +171,9 @@ download in the shell's `vault.rs`). No icon shows a key. Per entry: another add
 Switch: Vault, "Auto-type, import and export". One logo everywhere: `app/brand/sompio-logo.svg` is the app icon
 (`npx tauri icon`) and the `Logo` component.
 
-First run: welcome, the rules of the lock (do's and don'ts), "Generate my key picture (.png)" (saved and read
-back to check it), the password, then the recovery code (`Vault::new_picture` and `setup_with_picture`).
+First run: no setup. Calendar opens straight away. The first time Vault or Trace is opened, one screen sets up the
+lock: two lines of rules, the password, and an optional "Also use a key picture" (`Vault::setup_without_picture`,
+or `new_picture` + `setup_with_picture`), then the recovery code.
 
 ## Testing and problem reports
 
@@ -198,17 +199,21 @@ Code: `vault/` (store, generator, health, CSV, auto-type parsing and matching; a
 
 ## The Sompio Lock
 
-Everything Sompio stores is encrypted with one random 256-bit vault key (`lock/`). The vault key is only kept
+Vault's and Trace's data are encrypted with keys derived from one random 256-bit vault key (`lock/`). The vault key is only kept
 wrapped (XChaCha20-Poly1305) in `lock.json`, and opens two ways:
 
 - **Master password + key picture.** The password goes through Argon2id (64 MiB, 3 passes) and is mixed with a
   256-bit secret hidden in a night-sky PNG the person keeps on their phone. Both are needed. The secret sits in a
   private PNG chunk and, as backup, in the lowest bit of the blue channel along three rows, so ordinary copying
   keeps it; chat apps that shrink photos destroy it. On a PC the person trusts, the picture's secret can be
-  remembered in Windows Credential Manager so only the password is typed there.
+  remembered in the OS credential store (Windows Credential Manager, macOS Keychain, Secret Service) so only the
+  password is typed there. Without a key picture file, the secret is made and kept only in that store; it can be
+  saved as a picture later (`Vault::export_picture`).
 - **Recovery code** (120 bits, printed once). It sets a new password, picture and code; the old ones stop working.
 
-Each app gets its own key from the vault key (HKDF). Trace's database is encrypted with SQLite3 Multiple Ciphers
+Calendar has its own random key in the OS credential store, so it opens without the lock; a backup of that key
+sealed with the vault key sits in `calendar.key` and restores it after an unlock if the store loses it. A calendar
+from before this is moved to its own key at the next unlock. Each other app gets its own key from the vault key (HKDF). Trace's database is encrypted with SQLite3 Multiple Ciphers
 (ChaCha20-Poly1305), vendored as a drop-in for rusqlite's bundled SQLite in `vendor/libsqlite3-sys`, so no
 OpenSSL is needed to build. Data from before the lock is encrypted in place on setup. Sompio locks itself after
 a chosen idle time. Nobody, including us, can reset a lost password together with a lost recovery code.

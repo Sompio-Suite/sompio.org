@@ -376,8 +376,8 @@ fn popup_position(app: &AppHandle, corner: &str, h: f64) -> (f64, f64) {
     }
 }
 
-/// Reloads the coming days from the encrypted store. Only works while Sompio is unlocked; while
-/// it's locked the reminders already loaded keep running.
+/// Reloads the coming days from the encrypted store. Works whenever Calendar can be opened (with its
+/// own key, or with Sompio unlocked); otherwise the reminders already loaded keep running.
 fn refresh(app: &AppHandle) -> anyhow::Result<()> {
     let state = app.state::<AppState>();
     let (path, key) = state.vault.calendar_db()?;
@@ -399,9 +399,9 @@ pub fn start(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
             let state = app.state::<AppState>();
-            let unlocked = state.vault.status().map(|s| s.unlocked).unwrap_or(false);
+            // Calendar opens without the lock once it has its own key on this computer
             let needs = state.calendar.dirty.load(Ordering::SeqCst) || state.calendar.reminders.lock().map(|r| r.needs_refresh(now())).unwrap_or(false);
-            if needs && unlocked {
+            if needs && state.vault.status().map(|s| s.unlocked || s.calendar_open).unwrap_or(false) {
                 let a = app.clone();
                 let ok = tauri::async_runtime::spawn_blocking(move || refresh(&a)).await.map(|r| r.is_ok()).unwrap_or(false);
                 if ok {
@@ -425,7 +425,7 @@ pub fn tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Sompio", true, None::<&str>)?;
     let pause = MenuItem::with_id(app, "pause", "Pause reminders for 1 hour", true, None::<&str>)?;
     let resume = MenuItem::with_id(app, "resume", "Resume reminders", true, None::<&str>)?;
-    let lock = MenuItem::with_id(app, "lock", "Lock Sompio", true, None::<&str>)?;
+    let lock = MenuItem::with_id(app, "lock", "Lock Vault and Trace", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit (reminders stop)", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(app, &[&open, &pause, &resume, &sep, &lock, &quit])?;

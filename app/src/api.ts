@@ -108,7 +108,14 @@ export interface LicenceStatus { apps: AppStatus[]; keys: KeyView[]; trial_ends_
 export interface Added { label: string; days: number; test: boolean; status: LicenceStatus }
 
 export interface HardwareKey { index: number; serial: number | null; label: string; slot: number; added_ms: number }
-export interface LockStatus { set_up: boolean; unlocked: boolean; remembers_picture: boolean; hardware_keys: HardwareKey[] }
+export interface LockStatus {
+  set_up: boolean;
+  unlocked: boolean;
+  remembers_picture: boolean;
+  hardware_keys: HardwareKey[];
+  /** Calendar opens without the lock on this computer */
+  calendar_open: boolean;
+}
 
 
 // Calendar. Times are local, as "YYYY-MM-DDTHH:MM:SS" without a zone.
@@ -205,7 +212,11 @@ export const api = {
   lockSetupWithPicture: (password: string, remember: boolean) => call<string>("lock_setup_with_picture", { password, remember }),
   lockSetup: (password: string, picturePath: string, remember: boolean) => call<string>("lock_setup", { password, picturePath, remember }),
   lockUnlock: (password: string, picturePath: string | null, remember: boolean) => call<void>("lock_unlock", { password, picturePath, remember }),
-  lockRecover: (code: string, newPassword: string, picturePath: string, remember: boolean) =>
+  /** Setup without a key picture file: the password alone opens Sompio on this computer. */
+  lockSetupPlain: (password: string) => call<string>("lock_setup_plain", { password }),
+  /** Saves the key picture this computer remembers as a file. */
+  lockExportPicture: (picturePath: string) => call<void>("lock_export_picture", { picturePath }),
+  lockRecover: (code: string, newPassword: string, picturePath: string | null, remember: boolean) =>
     call<string>("lock_recover", { code, newPassword, picturePath, remember }),
   lockChangePassword: (old: string, nu: string, picturePath: string | null) => call<void>("lock_change_password", { old, new: nu, picturePath }),
   lockYubikeysPresent: () => call<{ name: string; serial: number | null }[]>("lock_yubikeys_present"),

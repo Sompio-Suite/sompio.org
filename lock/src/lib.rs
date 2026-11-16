@@ -181,6 +181,25 @@ fn unwrap(key: &Zeroizing<[u8; 32]>, w: &Wrapped) -> Option<VaultKey> {
     Some(VaultKey(arr))
 }
 
+/// A fresh random 256-bit key, for data that has its own key (like Calendar's).
+pub fn random_key() -> Result<Zeroizing<[u8; 32]>> {
+    Ok(Zeroizing::new(random::<32>()?))
+}
+
+/// Seals a 32-byte key under another, as text. Used to keep a backup of Calendar's key that only
+/// the lock can open.
+pub fn seal_key(with: &Zeroizing<[u8; 32]>, key: &[u8; 32]) -> Result<String> {
+    let w = wrap(with, &VaultKey(*key))?;
+    Ok(format!("{}.{}", w.nonce, w.data))
+}
+
+/// Opens what `seal_key` made. None for a wrong key or damaged text.
+pub fn open_key(with: &Zeroizing<[u8; 32]>, sealed: &str) -> Option<Zeroizing<[u8; 32]>> {
+    let (nonce, data) = sealed.trim().split_once('.')?;
+    let v = unwrap(with, &Wrapped { nonce: nonce.into(), data: data.into() })?;
+    Some(Zeroizing::new(v.0))
+}
+
 fn picture_id(p: &PictureSecret) -> String {
     hex(&Sha256::digest(p.as_bytes())[..6])
 }

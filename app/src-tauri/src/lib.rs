@@ -74,6 +74,20 @@ async fn lock_setup(state: State<'_, AppState>, password: String, picture_path: 
     with_vault(&state, move |v| Ok(v.setup(&password, Path::new(&picture_path), remember)?.to_string())).await
 }
 
+/// Setup without a key picture file: the password alone opens Sompio on this computer.
+#[tauri::command]
+async fn lock_setup_plain(state: State<'_, AppState>, password: String) -> CmdResult<String> {
+    let code = with_vault(&state, move |v| Ok(v.setup_without_picture(&password)?.to_string())).await?;
+    state.calendar.mark_dirty();
+    Ok(code)
+}
+
+/// Saves the key picture this computer remembers as a file.
+#[tauri::command]
+async fn lock_export_picture(state: State<'_, AppState>, picture_path: String) -> CmdResult<()> {
+    with_vault(&state, move |v| v.export_picture(Path::new(&picture_path))).await
+}
+
 #[tauri::command]
 async fn lock_new_picture(state: State<'_, AppState>, picture_path: String) -> CmdResult<()> {
     with_vault(&state, move |v| v.new_picture(Path::new(&picture_path))).await
@@ -81,7 +95,9 @@ async fn lock_new_picture(state: State<'_, AppState>, picture_path: String) -> C
 
 #[tauri::command]
 async fn lock_setup_with_picture(state: State<'_, AppState>, password: String, remember: bool) -> CmdResult<String> {
-    with_vault(&state, move |v| Ok(v.setup_with_picture(&password, remember)?.to_string())).await
+    let code = with_vault(&state, move |v| Ok(v.setup_with_picture(&password, remember)?.to_string())).await?;
+    state.calendar.mark_dirty();
+    Ok(code)
 }
 
 #[tauri::command]
@@ -96,10 +112,10 @@ async fn lock_recover(
     state: State<'_, AppState>,
     code: String,
     new_password: String,
-    picture_path: String,
+    picture_path: Option<String>,
     remember: bool,
 ) -> CmdResult<String> {
-    with_vault(&state, move |v| Ok(v.recover(&code, &new_password, Path::new(&picture_path), remember)?.to_string())).await
+    with_vault(&state, move |v| Ok(v.recover(&code, &new_password, picture_path.as_deref().map(Path::new), remember)?.to_string())).await
 }
 
 #[tauri::command]
@@ -848,6 +864,8 @@ pub fn run() {
             lock_unlock,
             lock_new_picture,
             lock_setup_with_picture,
+            lock_setup_plain,
+            lock_export_picture,
             lock_recover,
             lock_change_password,
             lock_forget_picture,

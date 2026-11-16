@@ -114,6 +114,39 @@ impl CalendarStore {
         Self::init(conn)
     }
 
+    /// Re-encrypts the calendar file under a new key. The file is checked to open with the new key
+    /// before this returns.
+    pub fn rekey(path: &Path, old: &[u8; 32], new: &[u8; 32]) -> Result<()> {
+        {
+            let conn = Connection::open(path)?;
+            apply_key(&conn, old)?;
+            if conn.query_row("SELECT COUNT(*) FROM sqlite_master", [], |r| r.get::<_, i64>(0)).is_err() {
+                bail!("The calendar didn't open with its old key.");
+            }
+            // Encryption can't be changed while the write-ahead log is in use.
+            conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(())).ok();
+            conn.query_row("PRAGMA journal_mode = DELETE", [], |_| Ok(()))?;
+            let hex: String = new.iter().map(|b| format!("{b:02x}")).collect();
+            conn.execute_batch(&format!("PRAGMA rekey = '{hex}';"))?;
+        }
+        for ext in ["-wal", "-shm"] {
+            let mut p = path.as_os_str().to_owned();
+            p.push(ext);
+            let _ = std::fs::remove_file(p);
+        }
+        Self::open_encrypted(path, new)?;
+        Ok(())
+    }
+
+    /// True when the file opens with this key.
+    pub fn opens_with(path: &Path, key: &[u8; 32]) -> bool {
+        Connection::open(path)
+            .ok()
+            .and_then(|c| apply_key(&c, key).ok().map(|_| c))
+            .map(|c| c.query_row("SELECT COUNT(*) FROM sqlite_master", [], |r| r.get::<_, i64>(0)).is_ok())
+            .unwrap_or(false)
+    }
+
     pub fn open_in_memory() -> Result<Self> {
         Self::init(Connection::open_in_memory()?)
     }

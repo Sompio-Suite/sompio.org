@@ -81,7 +81,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    api.lockStatus().then(setLock).catch(() => setLock({ set_up: true, unlocked: false, remembers_picture: false, hardware_keys: [] }));
+    api.lockStatus().then(setLock).catch(() => setLock({ set_up: true, unlocked: false, remembers_picture: false, hardware_keys: [], calendar_open: false }));
     api.licenceStatus().then(setLicence).catch(() => {});
   }, []);
   const unlocked = lock?.unlocked ?? false;
@@ -172,10 +172,12 @@ export default function App() {
   };
 
   if (!lock) return null;
-  if (!lock.set_up || !lock.unlocked) {
-    return <LockScreen key={String(lock.set_up)} status={lock} onUnlocked={async () => setLock(await api.lockStatus())} />;
-  }
-  if (ready === null) return null;
+  // Vault and Trace sit behind the lock, set up the first time one of them is opened. Calendar,
+  // Licences, Security and the rest open without it.
+  const gate = (reason?: string) => (
+    <LockScreen key={`${lock.set_up}-${reason}`} status={lock} reason={reason} onUnlocked={async () => setLock(await api.lockStatus())} />
+  );
+  const calendarOpen = unlocked || lock.calendar_open;
 
   const toReview = scan ? scan.open : 0;
   // A paid pass running out soon: a reminder at the top, at most once a day once closed
@@ -260,11 +262,17 @@ export default function App() {
           <span className="brand-name">sompio</span>
         </div>
         {navButton("overview", "Overview", "grid")}
-        {navButton("vault", "Vault", "key", vaultLocked ? <Icon name="lock" size={14} /> : undefined)}
-        {navButton("home", "Trace", "review", cleanLocked ? <Icon name="lock" size={14} /> : toReview > 0 && !inClean ? <span className="count" aria-label={`${toReview} to review`}>{n(toReview)}</span> : undefined)}
+        {navButton("vault", "Vault", "key", vaultLocked || !unlocked ? <Icon name="lock" size={14} /> : undefined)}
+        {navButton("home", "Trace", "review", cleanLocked || !unlocked ? <Icon name="lock" size={14} /> : toReview > 0 && !inClean ? <span className="count" aria-label={`${toReview} to review`}>{n(toReview)}</span> : undefined)}
         {navButton("calendar", "Calendar", "calendar", calendarLocked ? <Icon name="lock" size={14} /> : undefined)}
         {SUITE.filter((a) => !a.ready).map((a) => navButton(a.key as View, a.name, a.icon, <span className="soon-dot" title={a.when} />))}
         <div className="rail-spacer" />
+        {lock.set_up && unlocked && (
+          <button className="nav" aria-label="Lock Vault and Trace" title="Lock Vault and Trace now" onClick={lockNow}>
+            <Icon name="lock" />
+            <span className="label">Lock now</span>
+          </button>
+        )}
         {navButton("samples", "Samples", "sparkle")}
         {navButton("security", "Security", "lock")}
         {navButton("licences", "Licences", "ticket")}
@@ -317,7 +325,7 @@ export default function App() {
             </span>
           </div>
         )}
-        {inClean && cleanLocked && (
+        {inClean && unlocked && cleanLocked && (
           <div className="demo-bar locked-bar" role="status">
             <span>
               <Icon name="lock" size={16} /> Trace is read-only: {accessText(cleanAccess, licence?.now ?? Date.now()).text.toLowerCase()}. You can look at
@@ -329,13 +337,13 @@ export default function App() {
             </span>
           </div>
         )}
-        {inClean && demo && (
+        {inClean && unlocked && demo && (
           <div className="demo-bar" role="status">
             <span>You're looking at sample data. Nothing here is yours.</span>
             <button onClick={leave}>Use my own data</button>
           </div>
         )}
-        {inClean && (
+        {inClean && unlocked && ready !== null && (
           <div className="app-head">
             <div className="app-title">
               <h1>Trace</h1>
@@ -353,7 +361,7 @@ export default function App() {
             )}
           </div>
         )}
-        {view === "overview" && <Overview licence={licence} scan={scan} cleanReady={ready} onGo={setView} />}
+        {view === "overview" && <Overview licence={licence} scan={scan} cleanReady={!!ready} onGo={setView} />}
         {view === "licences" && <Licences licence={licence} onChanged={setLicence} />}
         {view === "report" && <ReportBug />}
         {view === "security" && (
@@ -364,11 +372,13 @@ export default function App() {
             onLockNow={lockNow}
             onChanged={async () => setLock(await api.lockStatus())}
             onUpdateFound={setUpdate}
+            onSetUp={() => setView("vault")}
           />
         )}
-        {view === "calendar" && <Calendar readOnly={calendarLocked} onAddKey={() => setView("licences")} />}
-        {view === "vault" && <Vault readOnly={vaultLocked} onAddKey={() => setView("licences")} />}
-        {view === "samples" && (
+        {view === "calendar" && (calendarOpen ? <Calendar key={String(unlocked)} readOnly={calendarLocked} onAddKey={() => setView("licences")} /> : gate("Calendar"))}
+        {view === "vault" && (unlocked ? <Vault readOnly={vaultLocked} onAddKey={() => setView("licences")} /> : gate("Vault"))}
+        {view === "samples" && !unlocked && gate()}
+        {view === "samples" && unlocked && (
           <Samples
             cleanHasData={!!ready && !demo}
             onCleanDemo={async () => {
@@ -382,7 +392,7 @@ export default function App() {
             onGo={setView}
           />
         )}
-        {inClean && cleanPage()}
+        {inClean && (!unlocked ? gate("Trace") : ready === null ? null : cleanPage())}
       </main>
       {update && updatePopup && !pairAsk && (
         <div className="modal-backdrop" role="presentation">
