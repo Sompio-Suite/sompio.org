@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { api, listen, openExternal, type BrowserPairAsk, type KindKey, type LicenceStatus, type LockStatus, type ScanSummary } from "./api";
+import { api, listen, openExternal, type BrowserPairAsk, type HealthReport, type KindKey, type LicenceStatus, type LockStatus, type ScanSummary, type TraceData, type VaultInTrace } from "./api";
 import { n } from "./format";
 import Icon, { type IconName } from "./Icon";
 import Logo from "./Logo";
@@ -11,20 +11,24 @@ import Messages from "./views/Messages";
 import Settings from "./views/Settings";
 import Sources from "./views/Sources";
 import Overview from "./views/Overview";
+import GettingStarted from "./views/GettingStarted";
+import { allDoneOnce, markStep, stepsDone } from "./steps";
 import Licences from "./views/Licences";
 import LockScreen from "./views/LockScreen";
 import Security from "./views/Security";
 import Vault from "./views/Vault";
 import { DOCS_URL } from "./views/VaultTools";
+
+const SOURCE_URL = "https://github.com/Sompio-Suite/sompio.org";
 import Samples from "./views/Samples";
 import ReportBug from "./views/ReportBug";
-import { BUY_URL, SUITE, accessText, passEnding } from "./licence";
+import { BUY_URL, accessText, passEnding } from "./licence";
 import { date } from "./format";
 import { autoCheckEnabled, checkForUpdate, dismissUpdate, dueForCheck, updateDismissed, type UpdateInfo } from "./updates";
 
 /** Suite pages, then Clean's pages. */
 export type View =
-  | "overview" | "vault" | "licences" | "security" | "samples" | "report"
+  | "overview" | "start" | "vault" | "licences" | "security" | "samples" | "report"
   | "home" | "review" | "requests" | "messages" | "sources" | "settings";
 const CLEAN_VIEWS: View[] = ["home", "review", "requests", "messages", "sources", "settings"];
 export interface Jump { channelId: string; messageId?: string }
@@ -130,11 +134,33 @@ export default function App() {
     checkConnections();
   }, [unlocked, refresh, checkConnections]);
 
+  // What Overview and the tabs count: Vault's health, its passwords that turned up in Trace, and
+  // the requests to companies. Read again whenever Overview or Getting started is opened.
+  const [health, setHealth] = useState<HealthReport | null>(null);
+  const [inChats, setInChats] = useState<VaultInTrace[]>([]);
+  const [traceData, setTraceData] = useState<TraceData | null>(null);
+  const [, setStepTick] = useState(0);
+  useEffect(() => {
+    const on = () => setStepTick((t) => t + 1);
+    window.addEventListener("sompio-steps", on);
+    return () => window.removeEventListener("sompio-steps", on);
+  }, []);
+  const atOverview = view === "overview" || view === "start";
+  useEffect(() => {
+    if (!unlocked || !atOverview) return;
+    api.vaultHealth().then((h) => { setHealth(h); if (h.checked > 0) markStep("secured"); }).catch(() => setHealth(null));
+    api.vaultInTrace().then(setInChats).catch(() => setInChats([]));
+    api.traceData().then(setTraceData).catch(() => setTraceData(null));
+  }, [unlocked, atOverview, version]);
+
   const lockNow = useCallback(async () => {
     await api.lockLock().catch(() => {});
     setLock(await api.lockStatus());
     setReady(null);
     setScan(null);
+    setHealth(null);
+    setInChats([]);
+    setTraceData(null);
     setVersion((v) => v + 1);
   }, []);
   // "Lock Sompio" in the tray menu
@@ -180,6 +206,14 @@ export default function App() {
     setScan(null);
     setVersion((v) => v + 1);
   };
+
+  // Getting started counts its four steps and moves under ? once all are done
+  const found = !!ready && !!scan && scan.scanned > 0;
+  const steps = stepsDone(found, found && scan!.open === 0);
+  const stepCount = Object.values(steps).filter(Boolean).length;
+  useEffect(() => { if (stepCount === 4) markStep("started"); }, [stepCount]);
+  const started = stepCount === 4 || allDoneOnce();
+  const vaultRisk = inChats.length + (health?.items.filter((i) => i.issues.some((x) => x.kind === "weak" || x.kind === "reused")).length ?? 0);
 
   if (!lock) return null;
   // Vault and Trace sit behind the lock, set up the first time one of them is opened. Overview,
@@ -265,21 +299,27 @@ export default function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <div className="brand">
+        <button className={`brand${view === "overview" ? " on" : ""}`} aria-label="Overview" title="Overview" aria-current={view === "overview" ? "page" : undefined} onClick={() => setView("overview")}>
           <Logo size={24} />
           <span className="brand-name">sompio</span>
-        </div>
+        </button>
         <nav className="tabs" aria-label="Sections">
-          {navButton("overview", "Overview", "grid")}
-          {navButton("vault", "Vault", "key", vaultLocked || !unlocked ? <Icon name="lock" size={13} /> : undefined)}
+          {!started && navButton("start", "Getting started", "check", !unlocked && lock.set_up ? undefined : <span className="steps-badge" aria-label={`${stepCount} of 4 steps done`}>{stepCount}/4</span>)}
           {navButton("home", "Trace", "review", cleanLocked || !unlocked ? <Icon name="lock" size={13} /> : toReview > 0 && !inClean ? <span className="count" aria-label={`${toReview} to review`}>{n(toReview)}</span> : undefined)}
-          {SUITE.filter((a) => !a.ready).map((a) => navButton(a.key as View, a.name, a.icon, <span className="soon-dot" title={a.when} />))}
+          {navButton("vault", "Vault", "key", vaultLocked || !unlocked ? <Icon name="lock" size={13} /> : vaultRisk > 0 && view !== "vault" ? <span className="count" aria-label={`${vaultRisk} passwords at risk`}>{n(vaultRisk)}</span> : undefined)}
+          <span className="tab-sep" aria-hidden="true" />
+          <button className="nav ext" title="See Sompio's code on GitHub (opens in your browser)" aria-label="GitHub" onClick={() => openExternal(SOURCE_URL).catch(() => {})}>
+            <Icon name="code" /><span className="label">GitHub</span>
+          </button>
+          <button className="nav ext" title="Documentation: how Sompio works, in plain words (opens in your browser)" aria-label="Documentation" onClick={() => openExternal(DOCS_URL).catch(() => {})}>
+            <Icon name="book" /><span className="label">Docs</span>
+          </button>
         </nav>
         <div className="bar-tools">
           {update && (
-            <button className="pill accent" onClick={() => setUpdatePopup(true)} title="Your data stays as it is">
+            <button className="pill accent" onClick={() => setUpdatePopup(true)} title={`Update to Sompio ${update.version}. Your data stays as it is.`}>
               <Icon name="refresh" size={14} />
-              {typeof installing === "number" ? `Updating${installing ? ` ${installing}%` : "…"}` : `Update to ${update.version}`}
+              {typeof installing === "number" ? `Updating${installing ? ` ${installing}%` : "…"}` : "Update"}
             </button>
           )}
           {lock.set_up ? (
@@ -289,7 +329,7 @@ export default function App() {
               title={`${unlocked ? "Vault and Trace are open." : "Vault and Trace are locked."} ${connected.length ? `${connected.join(" and ")} connected to Trace.` : "Sompio works offline: your data never leaves this computer."}`}
             >
               <Icon name="lock" size={14} />
-              <span className="muted">{unlocked ? "Open" : "Locked"} ·</span> <strong>{unlocked ? "Lock" : "Unlock"}</strong>
+              <strong>{unlocked ? "Lock" : "Unlock"}</strong>
             </button>
           ) : (
             <button className="pill" onClick={() => setView("vault")} title="Vault and Trace ask for a lock the first time you open them">
@@ -306,7 +346,7 @@ export default function App() {
             </button>
             {menu === "help" && (
               <div className="dropdown" role="menu">
-                <button role="menuitem" onClick={() => { setMenu(null); openExternal(DOCS_URL).catch(() => {}); }}><Icon name="book" size={16} />Documentation<Icon name="external" size={12} /></button>
+                {started && <button role="menuitem" onClick={() => { setMenu(null); setView("start"); }}><Icon name="check" size={16} />Getting started</button>}
                 <button role="menuitem" onClick={() => { setMenu(null); setView("samples"); }}><Icon name="sparkle" size={16} />Samples</button>
               </div>
             )}
@@ -377,7 +417,10 @@ export default function App() {
             )}
           </div>
         )}
-        {view === "overview" && <Overview licence={licence} scan={scan} cleanReady={!!ready} onGo={setView} />}
+        {view === "overview" && (unlocked || !lock.set_up
+          ? <Overview licence={licence} scan={scan} traced={found} health={health} inChats={inChats} trace={traceData} onGo={setView} onReview={() => openReview(null)} />
+          : gate("Overview"))}
+        {view === "start" && <GettingStarted licence={licence} scan={scan} cleanReady={!!ready} learned={steps.learn} secured={steps.secure} onGo={setView} />}
         {view === "licences" && <Licences licence={licence} onChanged={setLicence} />}
         {view === "report" && <ReportBug />}
         {view === "security" && (

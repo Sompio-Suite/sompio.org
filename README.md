@@ -453,7 +453,7 @@ app/
   src/               the React interface
     api.ts           typed bridge to Rust (falls back to mock.ts in a browser)
     usePaged.ts      loads only the rows on screen, so huge histories stay smooth
-    views/           Welcome, Overview, Exposure report, Messages, Settings
+    views/           Welcome, Overview (exposure score), Getting started, Exposure report, Messages, Settings
 ```
 
 ## Why it stays fast

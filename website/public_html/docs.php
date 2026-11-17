@@ -13,6 +13,7 @@ site_header('docs');
       <a href="#what">What Sompio is</a>
       <a href="#private">Why it's private</a>
       <a href="#lock">The Sompio Lock</a>
+      <a href="#score">Overview and your score</a>
       <a href="#trace">Trace</a>
       <a href="#vault">Vault</a>
       <a href="#extension">Browser extension</a>
@@ -73,6 +74,18 @@ site_header('docs');
           <li><strong>Auto-lock.</strong> Vault and Trace lock themselves after a while without use. Deadline reminders keep coming.</li>
         </ul>
         <p class="callout"><strong>Nobody can reset it, not even us.</strong> That's the point: we never have your keys. Lose the password or picture <em>and</em> the recovery code, and the data can't be opened by anyone. Don't edit, crop or send the key picture through chat apps that shrink photos, because that erases the secret.</p>
+      </section>
+
+      <section id="score">
+        <h2>Overview and your exposure score</h2>
+        <p>Click the Sompio logo at the top left to open <strong>Overview</strong>: how exposed you are, the next best thing to do, and what Trace, Vault and your requests to companies have found. New to Sompio? <strong>Getting started</strong>, next to it, walks you through the four steps. Once all four are done, it moves under the <strong>?</strong> menu.</p>
+        <p>The <strong>exposure score</strong> runs from 0 to 100, and <strong>lower is better</strong>. It is worked out on your computer, only from what Sompio has found so far:</p>
+        <ul>
+          <li><strong>Trace, up to 60 points:</strong> findings you haven't dealt with yet. A "fix now" finding (a password, ID or bank number) counts three times as much as one "worth a look", and a low-risk one a quarter.</li>
+          <li><strong>Vault, up to 25 points:</strong> passwords that also turned up in your chats or files count most, then weak passwords and passwords used for more than one account.</li>
+          <li><strong>Requests, up to 15 points:</strong> 5 for each company that missed its one-month deadline to answer you.</li>
+        </ul>
+        <p>The first few things count most, so a long list of small things never outweighs a few serious ones. The smaller circle shows what your score will be once you've dealt with the risky findings, the passwords at risk and the late requests. The score can't see what you haven't scanned, so a low score means "nothing risky found so far", not "nothing out there".</p>
       </section>
 
       <section id="trace">

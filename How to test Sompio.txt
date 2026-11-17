@@ -17,8 +17,8 @@ Mac: open the .dmg and drag Sompio to Applications. The first time you open it, 
 Linux: make the AppImage runnable (right-click, Properties, "Allow executing file as program")
   and open it, or install the .deb with: sudo apt install ./Sompio_*_linux_amd64.deb
 
-Sompio opens on Overview: your privacy plan in four steps (Learn, Find, Clean, Secure). The first
-time you open Vault or Trace, you set up the Sompio Lock on one screen:
+Sompio opens on Overview: your exposure score and the next best step. Getting started, next to
+it, is the plan in four steps (Learn, Find, Clean, Secure). The first time you open Vault or Trace, you set up the Sompio Lock on one screen:
   - Choose a password.
   - Optional (recommended): tick "Also use a key picture". Sompio saves a .png file with a
     secret hidden in it. Keep a copy off this computer; it lets you open Sompio elsewhere.

@@ -1377,3 +1377,50 @@ svg.logo { display: block; }
 .plan-body p { margin: 0; color: var(--ink-2); font-size: var(--t-s); }
 .plan-act button { white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; }
 @media (max-width: 760px) { .plan-step { grid-template-columns: auto minmax(0, 1fr); } .plan-act { grid-column: 2; } }
+
+/* Top bar: the logo opens Overview; GitHub and Documentation open in the browser */
+.topbar .brand { border: 0; background: none; padding: 0.3rem 0.65rem 0.3rem 0.35rem; margin: 0 0.6rem 0 0; border-radius: var(--r-m); cursor: pointer; font-size: 1.1rem; }
+.topbar .brand:hover { background: #e8ebee; }
+.topbar .brand.on { background: var(--nav-active); }
+.topbar .tab-sep { width: 1px; height: 20px; background: var(--line-strong); margin: 0 0.3rem; flex: none; }
+.topbar button.nav.ext .label { font-weight: 500; }
+.steps-badge { background: var(--accent-soft); color: var(--accent-text); border-radius: 999px; padding: 0 0.45rem; font-size: var(--t-xs); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Overview */
+.overview h2 { font-size: 1rem; margin: 0 0 0.7rem; display: flex; align-items: center; gap: 0.5rem; }
+.overview h2 .icon { color: var(--ink-3); }
+.ov-top { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.ov-side { display: grid; gap: 1rem; }
+.ov-rings { display: flex; align-items: center; gap: 1.3rem; color: var(--ink-3); }
+.ring { position: relative; flex: none; }
+.ring svg { transform: rotate(-90deg); display: block; }
+.ring circle:last-child { transition: stroke-dashoffset 0.6s ease; }
+.ring-v { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: var(--ink); }
+.ring-v b { font-size: 2.3rem; line-height: 1; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.ring-v span { font-size: var(--t-xs); color: var(--ink-2); max-width: 7em; margin-top: 0.15rem; }
+.ring[style*="104"] .ring-v b { font-size: 1.6rem; }
+.ov-why { margin-top: 0.9rem; padding: 0.7rem 0.85rem; background: var(--sunken); border-radius: var(--r-l); font-size: var(--t-s); color: var(--ink-2); line-height: 1.5; }
+.ov-why strong { color: var(--ink); }
+.ov-how { margin: 0.55rem 0 0; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
+.ov-empty p { margin: 0 0 0.8rem; color: var(--ink-2); }
+.ov-next { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid #b9dcbc; background: var(--accent-soft); border-radius: var(--r-l); padding: 0.9rem 1rem; }
+.ov-next strong { display: block; margin-bottom: 0.15rem; }
+.ov-next span { color: var(--ink-2); font-size: var(--t-s); }
+.ov-next button { white-space: nowrap; flex: none; }
+.meter { height: 8px; border-radius: 5px; background: var(--sunken); overflow: hidden; margin: 0 0 0.4rem; }
+.meter i { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+.ov-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.4rem 0; border-bottom: 1px solid var(--line); font-size: var(--t-s); }
+.ov-row:last-of-type { border-bottom: 0; }
+.ov-row strong { font-variant-numeric: tabular-nums; }
+.ov-row .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.5rem; }
+.risk-bg-3 { background: var(--risk-high); }
+.risk-bg-2 { background: var(--risk-mid); }
+.risk-bg-1 { background: var(--risk-low); }
+.ov-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+.ov-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.6rem; }
+@media (max-width: 980px) { .ov-top, .ov-cards { grid-template-columns: minmax(0, 1fr); } }
+.overview .panel { padding: 1rem 1.15rem; }
+.overview .ov-cards { margin-top: 0; }
+.ov-cards .panel { display: flex; flex-direction: column; }
+.ov-cards .ov-foot { margin-top: auto; padding-top: 0.6rem; }
+@media (max-width: 1180px) { .topbar button.nav.ext .label { display: none; } .topbar button.nav.ext { padding: 0.45rem 0.55rem; } }
