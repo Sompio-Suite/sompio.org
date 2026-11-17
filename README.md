@@ -183,7 +183,7 @@ last log lines for a bug report.
 
 ## Samples
 
-The Samples page (sidebar) has made-up data for every function, all about one made-up person, Alex Rivers.
+The Samples page (gear menu, "Sample data for testing") has made-up data for every function, all about one made-up person, Alex Rivers.
 "Add Alex's sample data" fills all three tools at once. There's Trace's sample data (chats on six platforms with
 every kind of finding, including bank accounts and ID numbers from several countries), sample exports for all
 12 import types plus a folder for the computer scan (with a screenshot and a photo that has a location),

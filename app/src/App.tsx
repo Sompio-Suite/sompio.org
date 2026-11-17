@@ -94,7 +94,7 @@ export default function App() {
   const [installing, setInstalling] = useState<number | null | "error">(null);
   // A new version found by the automatic check pops up once; "Later" keeps it in the sidebar only
   const [updatePopup, setUpdatePopup] = useState(false);
-  const [menu, setMenu] = useState<"help" | "settings" | null>(null);
+  const [menu, setMenu] = useState<"settings" | null>(null);
   // Close the small menus on a click elsewhere or Escape
   useEffect(() => {
     if (!menu) return;
@@ -147,7 +147,7 @@ export default function App() {
   }, []);
   const atOverview = view === "overview" || view === "start";
   useEffect(() => {
-    if (!unlocked || !atOverview) return;
+    if (!unlocked) return;
     api.vaultHealth().then((h) => { setHealth(h); if (h.checked > 0) markStep("secured"); }).catch(() => setHealth(null));
     api.vaultInTrace().then(setInChats).catch(() => setInChats([]));
     api.traceData().then(setTraceData).catch(() => setTraceData(null));
@@ -340,25 +340,21 @@ export default function App() {
           <button className={`pill${view === "report" ? " on" : ""}`} onClick={() => setView("report")}>
             <Icon name="bug" size={14} />Report a bug
           </button>
-          <div className="menu-wrap">
-            <button className="icon-btn" aria-label="Help" aria-haspopup="menu" aria-expanded={menu === "help"} title="Help" onClick={() => setMenu(menu === "help" ? null : "help")}>
+          {/* Once Getting started is done, it lives behind ? */}
+          {started && (
+            <button className={`icon-btn${view === "start" ? " on" : ""}`} aria-label="Getting started" title="Getting started" onClick={() => setView("start")}>
               <span className="q">?</span>
             </button>
-            {menu === "help" && (
-              <div className="dropdown" role="menu">
-                {started && <button role="menuitem" onClick={() => { setMenu(null); setView("start"); }}><Icon name="check" size={16} />Getting started</button>}
-                <button role="menuitem" onClick={() => { setMenu(null); setView("samples"); }}><Icon name="sparkle" size={16} />Samples</button>
-              </div>
-            )}
-          </div>
+          )}
           <div className="menu-wrap">
-            <button className={`icon-btn${view === "security" || view === "licences" ? " on" : ""}`} aria-label="Settings" aria-haspopup="menu" aria-expanded={menu === "settings"} title="Settings" onClick={() => setMenu(menu === "settings" ? null : "settings")}>
+            <button className={`icon-btn${view === "security" || view === "licences" || view === "samples" ? " on" : ""}`} aria-label="Settings" aria-haspopup="menu" aria-expanded={menu === "settings"} title="Settings" onClick={() => setMenu(menu === "settings" ? null : "settings")}>
               <Icon name="settings" size={18} />
             </button>
             {menu === "settings" && (
               <div className="dropdown" role="menu">
                 <button role="menuitem" onClick={() => { setMenu(null); setView("security"); }}><Icon name="lock" size={16} />Security and updates</button>
                 <button role="menuitem" onClick={() => { setMenu(null); setView("licences"); }}><Icon name="ticket" size={16} />Activate a product</button>
+                <button role="menuitem" onClick={() => { setMenu(null); setView("samples"); }}><Icon name="folder" size={16} />Sample data for testing</button>
               </div>
             )}
           </div>

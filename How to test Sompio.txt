@@ -30,7 +30,7 @@ has a made-up person, Alex Rivers, for everything (see step 2).
 
 2. THE SAMPLES PAGE
 -------------------
-Click ? at the top right, then "Samples". "Add Alex's sample data" fills Trace and Vault at once.
+Click the gear at the top right, then "Sample data for testing". "Add Alex's sample data" fills Trace and Vault at once.
 It also has, per tool:
   - Vault: sample entries (2FA codes, weak and reused passwords, auto-type tests), plus KeePass
     files and CSV exports to import. The KeePass sample password is: sample-password
