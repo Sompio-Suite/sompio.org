@@ -52,7 +52,7 @@ How the suite is put together, app by app.
 | App | Status |
 | --- | --- |
 | **Trace** | Built: finds and cleans up personal information in your exports and files, and handles GDPR requests to companies (below). Called Clean before 0.8.0 |
-| **Calendar** | Retired from the app in 0.1.0 (the new numbering). Its reminder engine stays, for Trace's deadline reminders (below) |
+| **Calendar** | Retired from the app in 2.0.0. Its reminder engine stays, for Trace's deadline reminders (below) |
 | **Vault** | Built (round 1 of 3): KeePass-compatible password manager with auto-type (below) |
 | **Voice** | On hold: taken out of the app in 0.7.0. The code is kept in `voice/` (below) |
 
