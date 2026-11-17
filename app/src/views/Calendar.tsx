@@ -155,8 +155,8 @@ export default function Calendar({ readOnly, onAddKey }: Props) {
       {readOnly && (
         <div className="notice warn">
           <Icon name="lock" />
-          <div><strong>Calendar is read-only.</strong><span>Your reminders still pop up. Add a key to change them.</span></div>
-          <button onClick={onAddKey}>Add a key</button>
+          <div><strong>Calendar is read-only.</strong><span>Your reminders still pop up. Activate a product to change them.</span></div>
+          <button onClick={onAddKey}>Activate a product</button>
         </div>
       )}
       {paused && (

@@ -39,8 +39,8 @@ export default function Licences({ licence, onChanged }: Props) {
     <div className="page">
       <div className="page-head">
         <div>
-          <h1>Licences</h1>
-          <p className="muted">Keys are checked on this computer against Sompio's signature. Nothing is sent anywhere.</p>
+          <h1>Activate a product</h1>
+          <p className="muted">Enter a product key to unlock Sompio. Keys are checked on this computer; nothing is sent anywhere.</p>
         </div>
         <button onClick={() => openExternal(BUY_URL).catch(() => {})}><Icon name="ticket" size={16} />Get a key</button>
       </div>
@@ -56,7 +56,7 @@ export default function Licences({ licence, onChanged }: Props) {
       )}
 
       <section className="panel add-key">
-        <label htmlFor="key">Add a key</label>
+        <label htmlFor="key">Product key</label>
         <textarea
           id="key"
           rows={3}
@@ -67,7 +67,7 @@ export default function Licences({ licence, onChanged }: Props) {
           onChange={(e) => setKey(e.target.value)}
         />
         <div className="toolbar">
-          <button className="primary" disabled={busy || key.trim().length < 20} onClick={add}>{busy ? "Checking…" : "Add key"}</button>
+          <button className="primary" disabled={busy || key.trim().length < 20} onClick={add}>{busy ? "Checking…" : "Activate"}</button>
           <span className="small muted">Paste the whole key. Capitals, spaces and dashes don't matter.</span>
         </div>
         {result && <div className={result.ok ? "success" : "error"} role="status">{result.text}</div>}

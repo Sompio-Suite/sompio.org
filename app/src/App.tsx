@@ -319,7 +319,7 @@ export default function App() {
             {menu === "settings" && (
               <div className="dropdown" role="menu">
                 <button role="menuitem" onClick={() => { setMenu(null); setView("security"); }}><Icon name="lock" size={16} />Security and updates</button>
-                <button role="menuitem" onClick={() => { setMenu(null); setView("licences"); }}><Icon name="ticket" size={16} />Licences</button>
+                <button role="menuitem" onClick={() => { setMenu(null); setView("licences"); }}><Icon name="ticket" size={16} />Activate a product</button>
               </div>
             )}
           </div>

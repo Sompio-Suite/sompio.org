@@ -174,8 +174,8 @@ export default function Vault({ readOnly, onAddKey }: Props) {
       {readOnly && (
         <div className="notice warn vault-notice">
           <Icon name="lock" />
-          <div><strong>Vault is read-only.</strong><span>You can still see, copy, auto-type and export every password. Add a key to add or change them.</span></div>
-          <button onClick={onAddKey}>Add a key</button>
+          <div><strong>Vault is read-only.</strong><span>You can still see, copy, auto-type and export every password. Activate a product to add or change them.</span></div>
+          <button onClick={onAddKey}>Activate a product</button>
         </div>
       )}
 

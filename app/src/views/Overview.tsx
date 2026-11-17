@@ -30,17 +30,17 @@ export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
 
       {licence?.beta && (
         <div className="notice">
-          <Icon name="sparkle" />
+          <Icon name="bug" />
           <div>
             <strong>This is the Sompio beta: everything is unlocked, free.</strong>
             <span>
               Your 30-day free trial starts when Sompio launches. It's a beta, so things can still go wrong: keep a copy of
               your passwords (Vault, then Auto-type, import and export, then Save as KeePass file) and your recovery sheet.
-              Found a problem or have an idea? Tell us with Report a bug.
+              Found a problem or have an idea? Tell us with Report a bug (also under ? at the top).
             </span>
           </div>
           <div className="notice-actions">
-            <button onClick={() => onGo("report")}>Report a bug</button>
+            <button onClick={() => onGo("report")}><Icon name="bug" size={15} />Report a bug</button>
           </div>
         </div>
       )}
@@ -49,11 +49,11 @@ export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
           <Icon name="sparkle" />
           <div>
             <strong>You're on the free trial until {date(licence.trial_ends_at)}.</strong>
-            <span>Everything is unlocked. Add a key before then to keep going; nothing you add here is lost either way.</span>
+            <span>Everything is unlocked. Activate a product before then to keep going; nothing you add here is lost either way.</span>
           </div>
           <div className="notice-actions">
             <button onClick={() => openExternal(BUY_URL).catch(() => {})}>Get a key</button>
-            <button onClick={() => onGo("licences")}>Add a key</button>
+            <button onClick={() => onGo("licences")}>Activate a product</button>
           </div>
         </div>
       )}
@@ -62,11 +62,11 @@ export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
           <Icon name="lock" />
           <div>
             <strong>Your access has ended.</strong>
-            <span>Everything you added is still here and readable. Add a key to keep cleaning and syncing.</span>
+            <span>Everything you added is still here and readable. Activate a product to keep cleaning and syncing.</span>
           </div>
           <div className="notice-actions">
             <button className="primary" onClick={() => openExternal(BUY_URL).catch(() => {})}>Get a key</button>
-            <button onClick={() => onGo("licences")}>Add a key</button>
+            <button onClick={() => onGo("licences")}>Activate a product</button>
           </div>
         </div>
       )}
