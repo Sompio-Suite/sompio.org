@@ -1,4 +1,4 @@
-Sompio 2.0, a new start, built around one mission: find what you have left online, remove it yourself, and keep your digital footprint safe.
-Overview is now your privacy plan in four steps: Learn, Find, Clean and Secure, showing how far you are.
-Calendar is gone. Sompio still reminds you of request deadlines and when your data exports should be ready.
-New beginner guide on sompio.org: What is personal information, and when is sharing it risky?
+New Overview: your exposure score from 0 to 100 (lower is better), what it will be once you've dealt with the risky things, and the next best step to take.
+Overview also shows your progress, what Trace found, which Vault passwords are at risk, and where your requests to companies stand.
+The four steps (Learn, Find, Clean, Secure) are now under Getting started. Once you've done all four, it moves under the ? menu.
+Click the Sompio logo to go back to Overview. GitHub and Docs are now at the top too.
