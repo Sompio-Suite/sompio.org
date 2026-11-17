@@ -7,6 +7,13 @@ require __DIR__ . '/private/lib.php';
 
 $r = latest_release();
 
+// Show the visitor's system straight away, so the page doesn't jump while os.js loads
+$ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+$osGuess = preg_match('/Mac OS X|Macintosh/', $ua) && !preg_match('/iPhone|iPad/', $ua) && isset($r['platforms']['mac']) ? 'mac'
+    : (preg_match('/Linux/', $ua) && !preg_match('/Android/', $ua) && (isset($r['platforms']['linux_appimage']) || isset($r['platforms']['linux_deb'])) ? 'linux' : 'windows');
+$hide = fn(string $os) => $os === $osGuess ? '' : ' hidden';
+$tabOn = fn(string $os) => $os === $osGuess ? ' on" aria-selected="true' : '" aria-selected="false';
+
 if (isset($_GET['get'])) {
     if ($r === null) {
         http_response_code(404);
@@ -55,13 +62,13 @@ site_header('download');
           <h2>Sompio <?= e($r['version']) ?></h2>
           <?php if ($hasMac || $hasLinux): ?>
             <div class="os-tabs" role="tablist" aria-label="Your system">
-              <a href="#for-windows" class="os-tab" data-os="windows" role="tab">Windows</a>
-              <?php if ($hasMac): ?><a href="#for-mac" class="os-tab" data-os="mac" role="tab">Mac</a><?php endif; ?>
-              <?php if ($hasLinux): ?><a href="#for-linux" class="os-tab" data-os="linux" role="tab">Linux</a><?php endif; ?>
+              <a href="#for-windows" class="os-tab<?= $tabOn('windows') ?>" data-os="windows" role="tab">Windows</a>
+              <?php if ($hasMac): ?><a href="#for-mac" class="os-tab<?= $tabOn('mac') ?>" data-os="mac" role="tab">Mac</a><?php endif; ?>
+              <?php if ($hasLinux): ?><a href="#for-linux" class="os-tab<?= $tabOn('linux') ?>" data-os="linux" role="tab">Linux</a><?php endif; ?>
             </div>
           <?php endif; ?>
 
-          <div class="os-panel" id="for-windows" data-os="windows">
+          <div class="os-panel" id="for-windows" data-os="windows"<?= $hide('windows') ?>>
             <p class="small muted">Windows 10 and 11, 64-bit · <?= e(human_size($r['size'])) ?> · <?= e(date('j M Y', $r['date'])) ?></p>
             <a class="button primary big" href="download.php?get=1" rel="nofollow">Download for Windows</a>
             <div class="fingerprint">
@@ -72,7 +79,7 @@ site_header('download');
           </div>
 
           <?php if ($hasMac): $m = $pl['mac']; ?>
-          <div class="os-panel" id="for-mac" data-os="mac">
+          <div class="os-panel" id="for-mac" data-os="mac"<?= $hide('mac') ?>>
             <p class="small muted">macOS 11 or newer, Apple silicon and Intel · <?= e(human_size($m['size'])) ?></p>
             <a class="button primary big" href="<?= e($m['url']) ?>" rel="nofollow noopener noreferrer">Download for Mac</a>
             <div class="fingerprint">
@@ -84,7 +91,7 @@ site_header('download');
           <?php endif; ?>
 
           <?php if ($hasLinux): ?>
-          <div class="os-panel" id="for-linux" data-os="linux">
+          <div class="os-panel" id="for-linux" data-os="linux"<?= $hide('linux') ?>>
             <p class="small muted">64-bit Linux, like Ubuntu, Debian or Fedora<?= isset($pl['linux_appimage']) ? ' · ' . e(human_size($pl['linux_appimage']['size'])) : '' ?></p>
             <?php if (isset($pl['linux_appimage'])): $f = $pl['linux_appimage']; ?>
               <a class="button primary big" href="<?= e($f['url']) ?>" rel="nofollow noopener noreferrer">Download for Linux (AppImage)</a>
@@ -108,7 +115,7 @@ site_header('download');
     </div>
 
     <section id="install" class="hero-install">
-      <div class="os-panel" data-os="windows">
+      <div class="os-panel" data-os="windows"<?= $hide('windows') ?>>
         <h2>Installing on Windows: it will warn you, and that's expected</h2>
         <p>The beta isn't signed with a Microsoft certificate yet (the finished version will be). Until then, Windows and your browser don't know Sompio and show warnings. Here's what you'll see and what to click.</p>
         <ol class="steps">
@@ -134,7 +141,7 @@ site_header('download');
         </ol>
       </div>
 
-      <div class="os-panel" data-os="mac">
+      <div class="os-panel" data-os="mac"<?= $hide('mac') ?>>
         <h2>Installing on a Mac: macOS will stop it once, and that's expected</h2>
         <p>The beta isn't notarized by Apple yet (the finished version will be), so macOS doesn't know Sompio and blocks it the first time. You allow it once.</p>
         <ol class="steps">
@@ -159,7 +166,7 @@ site_header('download');
         <p class="small muted">Not on the Mac yet: auto-type into other apps, and reading text in pictures in Trace. Both are coming.</p>
       </div>
 
-      <div class="os-panel" data-os="linux">
+      <div class="os-panel" data-os="linux"<?= $hide('linux') ?>>
         <h2>Installing on Linux</h2>
         <ol class="steps">
           <li>
@@ -219,5 +226,6 @@ site_header('download');
       <a class="button support-button" href="<?= e(SUPPORT_URL) ?>" rel="noopener noreferrer"><?= HEART_ICON ?>Support on Ko-fi</a>
     </section>
   </main>
+<noscript><style>.os-panel[hidden] { display: grid; } .os-tabs { display: none; }</style></noscript>
 <script src="<?= asset('os.js') ?>" defer></script>
 <?php site_footer(); ?>
