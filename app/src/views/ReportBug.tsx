@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, pickScreenshot } from "../api";
 import Icon from "../Icon";
 
-const AREAS = ["Vault", "Trace", "Calendar", "Installing or starting", "The lock", "Something else"];
+const AREAS = ["Trace", "Vault", "Installing or starting", "The lock", "Something else"];
 const KINDS = ["Something didn't work", "Something was confusing", "An idea", "Something I liked"];
 
 /**

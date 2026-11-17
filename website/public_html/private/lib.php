@@ -131,7 +131,7 @@ function flush_outbox(): void
 
 /** What the "Get updates" form offers (index.php shows them, signup.php keeps only these). */
 const CHOICES = [
-    'tools' => ['Vault', 'Trace', 'Calendar'],
+    'tools' => ['Vault', 'Trace'],
 ];
 
 /**

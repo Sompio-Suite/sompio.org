@@ -65,9 +65,9 @@ export default function Requests({ readOnly, onGo }: { readOnly: boolean; onGo: 
     if (!remind) return "";
     try {
       await api.traceRemind(date, title, text);
-      return ` Calendar will remind you on ${niceDate(date)}.`;
+      return ` Sompio will remind you on ${niceDate(date)}.`;
     } catch {
-      return " The Calendar reminder couldn't be added.";
+      return " The reminder couldn't be added.";
     }
   };
 
@@ -97,7 +97,7 @@ export default function Requests({ readOnly, onGo }: { readOnly: boolean; onGo: 
             {overdue > 0 ? <strong className="overdue-text">{overdue} past the deadline</strong> : waiting.length > 0 ? `${waiting.length} waiting for an answer` : null}
             <label className="switch small">
               <input type="checkbox" checked={remind} onChange={(e) => setRemind(e.target.checked)} />
-              Calendar reminders
+              Remind me of deadlines
             </label>
           </div>
         </aside>

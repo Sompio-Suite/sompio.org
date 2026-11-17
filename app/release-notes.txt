@@ -1,3 +1,4 @@
-The menu is at the top: Overview, Vault, Trace and Calendar as tabs, with the lock, Report a bug, Help (?) and Settings (gear) on the right.
-"Licences" is now "Activate a product", under Settings.
-The beta notice on Overview shows its Report a bug button properly.
+A new start for Sompio, built around one mission: find what you have left online, remove it yourself, and keep your digital footprint safe.
+Overview is now your privacy plan in four steps: Learn, Find, Clean and Secure, showing how far you are.
+Calendar is gone. Sompio still reminds you of request deadlines and when your data exports should be ready.
+New beginner guide on sompio.org: What is personal information, and when is sharing it risky?

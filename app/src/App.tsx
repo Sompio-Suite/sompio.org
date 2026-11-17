@@ -14,7 +14,6 @@ import Overview from "./views/Overview";
 import Licences from "./views/Licences";
 import LockScreen from "./views/LockScreen";
 import Security from "./views/Security";
-import Calendar from "./views/Calendar";
 import Vault from "./views/Vault";
 import { DOCS_URL } from "./views/VaultTools";
 import Samples from "./views/Samples";
@@ -25,7 +24,7 @@ import { autoCheckEnabled, checkForUpdate, dismissUpdate, dueForCheck, updateDis
 
 /** Suite pages, then Clean's pages. */
 export type View =
-  | "overview" | "calendar" | "vault" | "licences" | "security" | "samples" | "report"
+  | "overview" | "vault" | "licences" | "security" | "samples" | "report"
   | "home" | "review" | "requests" | "messages" | "sources" | "settings";
 const CLEAN_VIEWS: View[] = ["home", "review", "requests", "messages", "sources", "settings"];
 export interface Jump { channelId: string; messageId?: string }
@@ -183,12 +182,11 @@ export default function App() {
   };
 
   if (!lock) return null;
-  // Vault and Trace sit behind the lock, set up the first time one of them is opened. Calendar,
-  // Licences, Security and the rest open without it.
+  // Vault and Trace sit behind the lock, set up the first time one of them is opened. Overview,
+  // Activate a product, Security and the rest open without it.
   const gate = (reason?: string) => (
     <LockScreen key={`${lock.set_up}-${reason}`} status={lock} reason={reason} onUnlocked={async () => setLock(await api.lockStatus())} />
   );
-  const calendarOpen = unlocked || lock.calendar_open;
 
   const toReview = scan ? scan.open : 0;
   // A paid pass running out soon: a reminder at the top, at most once a day once closed
@@ -207,7 +205,6 @@ export default function App() {
   const cleanLocked = licence != null && !cleanAccess?.active;
   const inClean = CLEAN_VIEWS.includes(view);
   const vaultLocked = licence != null && !licence.apps.find((a) => a.app === "vault")?.active;
-  const calendarLocked = licence != null && !licence.apps.find((a) => a.app === "calendar")?.active;
 
   const navButton = (id: View, label: string, icon: string, extra?: ReactNode, sub = false) => (
     <button
@@ -276,7 +273,6 @@ export default function App() {
           {navButton("overview", "Overview", "grid")}
           {navButton("vault", "Vault", "key", vaultLocked || !unlocked ? <Icon name="lock" size={13} /> : undefined)}
           {navButton("home", "Trace", "review", cleanLocked || !unlocked ? <Icon name="lock" size={13} /> : toReview > 0 && !inClean ? <span className="count" aria-label={`${toReview} to review`}>{n(toReview)}</span> : undefined)}
-          {navButton("calendar", "Calendar", "calendar", calendarLocked ? <Icon name="lock" size={13} /> : undefined)}
           {SUITE.filter((a) => !a.ready).map((a) => navButton(a.key as View, a.name, a.icon, <span className="soon-dot" title={a.when} />))}
         </nav>
         <div className="bar-tools">
@@ -290,7 +286,7 @@ export default function App() {
             <button
               className="pill"
               onClick={() => (unlocked ? lockNow() : setView("vault"))}
-              title={`${unlocked ? "Vault and Trace are open." : "Vault and Trace are locked. Calendar stays open."} ${connected.length ? `${connected.join(" and ")} connected to Trace.` : "Sompio works offline: your data never leaves this computer."}`}
+              title={`${unlocked ? "Vault and Trace are open." : "Vault and Trace are locked."} ${connected.length ? `${connected.join(" and ")} connected to Trace.` : "Sompio works offline: your data never leaves this computer."}`}
             >
               <Icon name="lock" size={14} />
               <span className="muted">{unlocked ? "Open" : "Locked"} ·</span> <strong>{unlocked ? "Lock" : "Unlock"}</strong>
@@ -395,7 +391,6 @@ export default function App() {
             onSetUp={() => setView("vault")}
           />
         )}
-        {view === "calendar" && (calendarOpen ? <Calendar key={String(unlocked)} readOnly={calendarLocked} onAddKey={() => setView("licences")} /> : gate("Calendar"))}
         {view === "vault" && (unlocked ? <Vault readOnly={vaultLocked} onAddKey={() => setView("licences")} /> : gate("Vault"))}
         {view === "samples" && !unlocked && gate()}
         {view === "samples" && unlocked && (

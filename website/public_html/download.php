@@ -37,7 +37,7 @@ if (isset($_GET['get'])) {
     exit;
 }
 
-page_head('Download the beta · Sompio', 'Download the free Sompio beta for Windows, Mac and Linux: a password vault, Trace and a calendar, all offline and encrypted on your computer.');
+page_head('Download the beta · Sompio', 'Download the free Sompio beta for Windows, Mac and Linux: find what you\'ve left online and remove it yourself, all offline and encrypted on your computer.');
 site_header('download');
 ?>
   <main class="wrap">
@@ -47,7 +47,7 @@ site_header('download');
         <h1>Download the Sompio beta</h1>
         <p class="lead">Everything is unlocked during the beta, free, no key or account needed. When Sompio launches, you get the 30-day free trial on top.</p>
         <ul class="ticks">
-          <li>Vault, Trace and Calendar in one program</li>
+          <li>Trace and Vault in one program</li>
           <li>No account and no cloud: your data stays on your computer, encrypted</li>
           <li>New versions come to you inside Sompio</li>
         </ul>
@@ -191,15 +191,14 @@ site_header('download');
       <h2>Where to start</h2>
       <div class="grid3">
         <div class="card">
-          <h3>Vault</h3>
+          <h3>1. Learn</h3>
           <ul>
-            <li>Bring in the passwords your browser saved: Vault shows you how, step by step.</li>
-            <li>Turn on the browser extension in Vault's settings, so logins fill themselves in.</li>
-            <li>Run the health check: weak, reused and breached passwords, and ones you've shared in your own chats.</li>
+            <li>New to this? Read <a href="what-is-personal-information.php">What is personal information?</a> first: five minutes, plain words.</li>
+            <li>It explains what's risky to have online, and what's fine.</li>
           </ul>
         </div>
         <div class="card">
-          <h3>Trace</h3>
+          <h3>2. Find and clean, with Trace</h3>
           <ul>
             <li>Start with what's quick: folders on your computer, your mailbox, a WhatsApp chat.</li>
             <li>Ask Discord, Instagram and the rest for your data at the same time; Sompio reminds you when it should be ready.</li>
@@ -207,11 +206,11 @@ site_header('download');
           </ul>
         </div>
         <div class="card">
-          <h3>Calendar</h3>
+          <h3>3. Secure, with Vault</h3>
           <ul>
-            <li>Type a reminder in one line: "Dentist Tue 15:00", then Enter.</li>
-            <li>Bring in your phone's calendar from a file, under More.</li>
-            <li>Close the window: Sompio stays by the clock, and reminders still pop up.</li>
+            <li>Bring in the passwords your browser saved: Vault shows you how, step by step.</li>
+            <li>Turn on the browser extension in Vault's settings, so logins fill themselves in.</li>
+            <li>Run the health check: weak, reused and breached passwords, and ones you've shared in your own chats.</li>
           </ul>
         </div>
       </div>

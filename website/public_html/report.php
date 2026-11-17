@@ -7,7 +7,7 @@
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
 
-const AREAS = ['Vault', 'Trace', 'Calendar', 'Installing or starting', 'The lock', 'Something else'];
+const AREAS = ['Trace', 'Vault', 'Calendar', 'Installing or starting', 'The lock', 'Something else'];
 const KINDS = ['Something didn\'t work', 'Something was confusing', 'An idea', 'Something I liked'];
 const MAX_SHOT = 4 * 1024 * 1024;
 

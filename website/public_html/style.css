@@ -382,3 +382,23 @@ details.fingerprint[open] { display: grid; gap: 0.45rem; }
 .hero .download > * { margin-top: 0; margin-bottom: 0; }
 .download .card-foot { margin-top: auto !important; padding-top: 0.8rem; border-top: 1px solid var(--line); color: var(--ink-2); }
 .hero + .hero-install { margin-top: 2.6rem; }
+
+/* Home: the four-step journey */
+.journey-section { padding: 3rem 0 1rem; }
+.journey { list-style: none; padding: 0; margin: 1.6rem 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; counter-reset: none; }
+.journey li { position: relative; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 1.2rem 1.2rem 1.1rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.journey li::after { content: "→"; position: absolute; right: -0.85rem; top: 1.35rem; color: var(--ink-3, #8a9199); font-size: 1rem; }
+.journey li:last-child::after { content: none; }
+.journey-num { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; background: var(--soft); color: var(--green-2); font-weight: 700; border: 1px solid #bcdcbf; }
+.journey h3 { margin: 0.3rem 0 0; font-size: 1.15rem; }
+.journey p { margin: 0; color: var(--ink-2); font-size: 0.95rem; flex: 1; }
+.journey a { font-size: 0.92rem; font-weight: 600; }
+.why-diy { margin-top: 1rem; }
+.why-card { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.5rem 1.6rem; }
+.why-card h2 { margin: 0 0 0.4rem; } .why-card p { margin: 0; color: var(--ink-2); max-width: 46rem; }
+@media (max-width: 900px) {
+  .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .journey li::after { content: none; }
+  .why-card { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 560px) { .journey { grid-template-columns: 1fr; } }

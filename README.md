@@ -4,7 +4,7 @@
 
 <h1 align="center">Sompio</h1>
 
-<p align="center"><strong>Private tools for your PC. Nothing leaves it.</strong></p>
+<p align="center"><strong>Find what you've left online. Remove it yourself.</strong></p>
 
 <p align="center">
   <a href="https://sompio.org">Website</a> ·
@@ -13,38 +13,35 @@
   <a href="https://sompio.org/guides.php">Guides</a>
 </p>
 
-Sompio is one program for Windows, Mac and Linux, with three tools:
+Most of what you've typed online is still stored somewhere: an address in an old chat, a password sent to a friend,
+a passport scan in an email. Sompio helps you take back your digital footprint in four steps, on your own computer,
+with no account and no data broker in between:
 
-- **Vault** keeps your passwords, fills them in your browser with the Sompio extension, and tells you which to change
-  first: weak, reused, breached, or ones Trace found in your own chats. It saves in the open KeePass format, so you're
-  never locked in.
-- **Trace** finds what you've shared online over the years (passwords, bank, ID and passport numbers, backup codes,
-  addresses…) in your PC's folders, your sent mail and the data exports that Discord, Reddit, WhatsApp and others must
-  give you. It helps you delete it, and writes the GDPR letters that make companies delete what they hold.
-- **Calendar** pops up reminders on time, for you or a whole group, even while Sompio is locked. Type one in a line,
-  or bring in your phone's calendar file.
+1. **Learn** what personal information is, where it ends up, how it gets misused, and what's fine to share
+   ([start here](https://sompio.org/what-is-personal-information.php)).
+2. **Find** it with **Trace**: in your computer's folders, your mail, and the data exports that Discord, Reddit,
+   WhatsApp and others must give you. Passwords, bank, ID and passport numbers, backup codes, addresses…, sorted by risk.
+3. **Clean** it up: go through each finding, and send the GDPR letters that make companies delete what they hold.
+4. **Secure** yourself from now on with **Vault**, a password manager that keeps your passwords encrypted on your
+   computer, fills them in your browser, and tells you which to change first. It saves in the open KeePass format.
 
-There's no account, no cloud and no server of ours holding your data. Everything stays on your PC, encrypted with
-your own lock. This repository holds the complete source, so anyone can check that.
-
-**Vault**: your logins in folders, with 2FA codes, auto-type and a health check.
-
-<img src="brand/screenshots/vault.png" width="100%" alt="Vault with sample logins">
+There's no cloud and no server of ours holding your data. Everything stays on your computer, encrypted with your own
+lock. This repository holds the complete source, so anyone can check that.
 
 **Trace**: everything risky that was found, sorted by danger, with what to do about each.
 
 <img src="brand/screenshots/trace.png" width="100%" alt="Trace listing ID numbers, passport numbers, backup codes and bank numbers found in sample chats">
 
-**Calendar**: type a reminder in one line; your day, the month and what's next.
+**Vault**: your logins in folders, with 2FA codes, auto-type and a health check.
 
-<img src="brand/screenshots/calendar.png" width="100%" alt="Calendar with a reminder typed in one line">
+<img src="brand/screenshots/vault.png" width="100%" alt="Vault with sample logins">
 
 <sub>Screenshots use the made-up sample data that ships with Sompio.</sub>
 
 **Status:** open beta on Windows 10 and 11, macOS 11 or newer, and 64-bit Linux, free with everything unlocked
 until launch. On Mac and Linux, auto-type and reading text in pictures are still to come.
 [Download the beta](https://sompio.org/download.php), and send bugs and ideas with
-"Report a bug" in the app's menu, or email hello@sompio.org.
+"Report a bug" at the top of the app, or email hello@sompio.org.
 
 ---
 
@@ -55,7 +52,7 @@ How the suite is put together, app by app.
 | App | Status |
 | --- | --- |
 | **Trace** | Built: finds and cleans up personal information in your exports and files, and handles GDPR requests to companies (below). Called Clean before 0.8.0 |
-| **Calendar** | Built: Desk Reminders rebuilt, encrypted, with privacy routines (below) |
+| **Calendar** | Retired from the app in 0.1.0 (the new numbering). Its reminder engine stays, for Trace's deadline reminders (below) |
 | **Vault** | Built (round 1 of 3): KeePass-compatible password manager with auto-type (below) |
 | **Voice** | On hold: taken out of the app in 0.7.0. The code is kept in `voice/` (below) |
 
@@ -508,7 +505,7 @@ and a test in `clean/tests/scanner.rs` that it catches the real thing and ignore
 
 ## Roadmap
 
-1. **Now (open beta):** Vault, Trace and Calendar on Windows, Mac and Linux.
+1. **Now (open beta):** Trace and Vault on Windows, Mac and Linux.
 2. **Before launch:** auto-type and text in pictures on Mac and Linux, code signing for Windows and Mac, an
    independent security review, licence keys on sale.
 3. **Later:** phones, Windows Hello and Touch ID quick unlock, Outlook.com sign-in, Sompio for Teams.

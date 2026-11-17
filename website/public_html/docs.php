@@ -3,7 +3,7 @@
 // app's Documentation button opens this page.
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
-page_head('How Sompio works · Documentation', 'What Sompio\'s Calendar, Trace and Vault do, how the Sompio Lock keeps your data encrypted, and why nothing leaves your computer.');
+page_head('How Sompio works · Documentation', 'How Sompio helps you find, clean up and secure your digital footprint with Trace and Vault, how the Sompio Lock keeps your data encrypted, and why nothing leaves your computer.');
 site_header('docs');
 ?>
 
@@ -13,7 +13,6 @@ site_header('docs');
       <a href="#what">What Sompio is</a>
       <a href="#private">Why it's private</a>
       <a href="#lock">The Sompio Lock</a>
-      <a href="#calendar">Calendar</a>
       <a href="#trace">Trace</a>
       <a href="#vault">Vault</a>
       <a href="#extension">Browser extension</a>
@@ -26,23 +25,22 @@ site_header('docs');
 
       <section id="what">
         <h2>What Sompio is</h2>
-        <p>Sompio is a private toolkit for your computer: a password vault, a tool that finds and removes what you've shared online, and a calendar, in one program. Everything works on your own computer. There is no account to make, no cloud, and no server of ours that holds your data.</p>
-        <p>Vault and Trace sit behind one lock, the <strong>Sompio Lock</strong>: one password opens both, and they're encrypted again when you step away. Calendar opens without a password, encrypted and protected by your computer account. You unlock it with a licence key, like a game key, checked on your computer without going online.</p>
+        <p>Sompio helps you take back your digital footprint, in four steps: <strong>learn</strong> what personal information is and why it matters, <strong>find</strong> what you've left behind in your chats, mail and files, <strong>clean</strong> it up, and <strong>secure</strong> yourself from now on. Everything works on your own computer. There is no account to make, no cloud, and no server of ours that holds your data.</p>
+        <p>It has two tools: <strong>Trace</strong> finds and removes, and <strong>Vault</strong> keeps your passwords safe. Both sit behind one lock, the <strong>Sompio Lock</strong>: one password opens both, and they're encrypted again when you step away. New to all this? Start with <a href="what-is-personal-information.php">What is personal information?</a></p>
         <div class="tools">
           <a class="tool" href="#vault"><strong>Vault</strong><span>Keeps your passwords safe, fills them in for you (also in your browser, with the Sompio extension), and tells you which ones to change first.</span></a>
           <a class="tool" href="#trace"><strong>Trace</strong><span>Finds personal information you've shared online (bank numbers, passwords, addresses…), helps you remove it, and gets companies to delete what they hold.</span></a>
-          <a class="tool" href="#calendar"><strong>Calendar</strong><span>Reminders that pop up on time, for you or a whole group, even when Sompio is locked.</span></a>
         </div>
       </section>
 
       <section id="private">
         <h2>Why it's private</h2>
-        <p>Sompio is built so your information never has to leave your computer. There is no Sompio server holding your passwords, messages or calendar, so there is nothing of yours on our side that could be hacked, sold or leaked.</p>
+        <p>Sompio is built so your information never has to leave your computer. There is no Sompio server holding your passwords or messages, so there is nothing of yours on our side that could be hacked, sold or leaked.</p>
         <ul class="points">
           <li><strong>Offline by design.</strong> Every tool works without internet. You can switch off the internet and use all of it.</li>
-          <li><strong>Encrypted on your disk.</strong> Your calendar, Trace's findings and requests, and your passwords are stored encrypted. Someone who copies the files gets nothing readable.</li>
+          <li><strong>Encrypted on your disk.</strong> Trace's findings and requests, and your passwords, are stored encrypted. Someone who copies the files gets nothing readable.</li>
           <li><strong>No account, no tracking.</strong> No sign-up, no email address, no analytics, no ads, no "phone home". Sompio doesn't know who you are.</li>
-          <li><strong>Pop-ups out of screenshots.</strong> Reminder pop-ups and the auto-type picker are left out of screenshots and screen sharing, so a stream or meeting doesn't show what pops up. The main window can be captured, for help and bug reports. Copied passwords stay out of Windows' clipboard history and cloud clipboard, and clear themselves after 20 seconds.</li>
+          <li><strong>Pop-ups out of screenshots.</strong> Pop-ups and the auto-type picker are left out of screenshots and screen sharing, so a stream or meeting doesn't show what pops up. The main window can be captured, for help and bug reports. Copied passwords stay out of Windows' clipboard history and cloud clipboard, and clear themselves after 20 seconds.</li>
           <li><strong>The browser extension stays local too.</strong> It talks only to Sompio on your computer, never to a server, and only after you allow your browser in Sompio. See <a href="#extension">Browser extension</a>.</li>
           <li><strong>Problem reports stay with you.</strong> If something goes wrong, Sompio writes a short note to a file on your computer. It's never sent anywhere; you decide whether to share it.</li>
         </ul>
@@ -72,23 +70,9 @@ site_header('docs');
           <li><strong>With a key picture</strong> (recommended), the second key is also saved as a night-sky .png with the secret hidden in its pixels. Keep a copy off the computer (a USB stick, or your phone as a file): with it, you can open Sompio on another computer. You can also save the picture later, under Security.</li>
           <li><strong>Recovery code.</strong> You also get a code to print or write down. It's your way back in if you forget the password or lose the second key.</li>
           <li><strong>YubiKey (optional).</strong> A YubiKey can stand in for the key picture.</li>
-          <li><strong>Auto-lock.</strong> Vault and Trace lock themselves after a while without use. Calendar stays open, and reminders keep coming.</li>
+          <li><strong>Auto-lock.</strong> Vault and Trace lock themselves after a while without use. Deadline reminders keep coming.</li>
         </ul>
         <p class="callout"><strong>Nobody can reset it, not even us.</strong> That's the point: we never have your keys. Lose the password or picture <em>and</em> the recovery code, and the data can't be opened by anyone. Don't edit, crop or send the key picture through chat apps that shrink photos, because that erases the secret.</p>
-      </section>
-
-      <section id="calendar">
-        <h2>Calendar</h2>
-        <p>Calendar makes sure you don't miss things: a small pop-up appears at the right moment, on top of whatever you're doing, without stealing your keyboard while you type or play.</p>
-        <ul class="points">
-          <li><strong>Type it in one line.</strong> "Dentist Tue 15:00" or "Gym every Monday 7:00", then Enter. Routines, groups and shared schedules sit under More, out of the way.</li>
-          <li><strong>Schedules and reminders</strong> that repeat daily, weekly, monthly or yearly, or on chosen days, with an optional heads-up a few minutes before.</li>
-          <li><strong>Your phone's calendar too.</strong> Export it as a file (.ics) from Google, Apple or Outlook, and bring it in under More. Sompio only reads the file; it never connects to your account.</li>
-          <li><strong>Shared schedules for groups.</strong> Share a schedule as a file with your team, club or family; everyone imports it, and reminders can target only certain groups. Time zones are handled, so a 20:00 event shows at the right local time for everyone.</li>
-          <li><strong>Always on.</strong> Sompio sits in the tray (the menu bar on a Mac) and can start when you sign in. Reminders keep coming even while Sompio is locked.</li>
-          <li><strong>Brings in Desk Reminders</strong> schedules, if you used that app before.</li>
-        </ul>
-        <p class="privacy-line"><strong>Privacy:</strong> your schedule is stored encrypted on your computer. No calendar account or cloud sync means no company sees your plans, who you meet or where you'll be.</p>
       </section>
 
       <section id="trace">
@@ -105,10 +89,10 @@ site_header('docs');
         <h3>Requests: get your data, and get it deleted</h3>
         <p>Under the GDPR, companies must give you your data, delete it, or stop using it when you ask, and answer within one month. Trace's <strong>Requests</strong> tab does the paperwork for you:</p>
         <ul class="points">
-          <li><strong>Get your data.</strong> Where and how to ask each platform for your export, how long it usually takes, and a Calendar reminder for when it should be ready.</li>
+          <li><strong>Get your data.</strong> Where and how to ask each platform for your export, how long it usually takes, and a reminder for when it should be ready.</li>
           <li><strong>Find it now.</strong> Don't want to wait? Ready-made searches for your watch terms on Discord, Reddit and X, limited to your own posts.</li>
           <li><strong>Ask a company.</strong> Search about 3,000 companies, data brokers included, and pick what you want: delete my data, send me a copy, or stop using it. Trace writes the letter with the right legal articles, and opens it in your own email app or the company's form.</li>
-          <li><strong>Track the deadline.</strong> Every request gets its one-month deadline and a Calendar reminder. No answer? Trace writes the reminder, and then a complaint to your country's data protection authority, which handles it for free.</li>
+          <li><strong>Track the deadline.</strong> Every request gets its one-month deadline and a reminder. No answer? Trace writes the reminder, and then a complaint to your country's data protection authority, which handles it for free.</li>
         </ul>
         <p class="privacy-line"><strong>Privacy:</strong> your exports, everything Trace finds and your requests stay encrypted on your computer. Unlike online "privacy scanners" and paid removal services, nobody else ever sees your messages or the list of companies you deal with. The company directory is built in, so searching it never goes online.</p>
       </section>

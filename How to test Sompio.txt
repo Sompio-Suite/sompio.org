@@ -17,8 +17,8 @@ Mac: open the .dmg and drag Sompio to Applications. The first time you open it, 
 Linux: make the AppImage runnable (right-click, Properties, "Allow executing file as program")
   and open it, or install the .deb with: sudo apt install ./Sompio_*_linux_amd64.deb
 
-Sompio opens straight away: Calendar works without a password. The first time you open Vault or
-Trace, you set up the Sompio Lock on one screen:
+Sompio opens on Overview: your privacy plan in four steps (Learn, Find, Clean, Secure). The first
+time you open Vault or Trace, you set up the Sompio Lock on one screen:
   - Choose a password.
   - Optional (recommended): tick "Also use a key picture". Sompio saves a .png file with a
     secret hidden in it. Keep a copy off this computer; it lets you open Sompio elsewhere.
@@ -30,15 +30,13 @@ has a made-up person, Alex Rivers, for everything (see step 2).
 
 2. THE SAMPLES PAGE
 -------------------
-Click ? at the top right, then "Samples". "Add Alex's sample data" fills all three tools at once.
+Click ? at the top right, then "Samples". "Add Alex's sample data" fills Trace and Vault at once.
 It also has, per tool:
   - Vault: sample entries (2FA codes, weak and reused passwords, auto-type tests), plus KeePass
     files and CSV exports to import. The KeePass sample password is: sample-password
   - Trace: open Trace with sample data, or save sample exports from Discord, Reddit, Telegram,
     X, Facebook, Instagram, TikTok, Snapchat, LinkedIn, WhatsApp and Gmail, and a sample
     computer folder with a screenshot and a photo in it.
-  - Calendar: sample reminders (the first pop-up comes within a minute), a team schedule kept
-    in New York time, and sample files.
 Sample files are saved to a "Sompio samples" folder in your Documents, which opens for you.
 
 
@@ -46,7 +44,6 @@ Sample files are saved to a "Sompio samples" folder in your Documents, which ope
 --------------
 Lock
   - Lock Vault and Trace (click "Lock" at the top right, or wait for the idle timer) and unlock again.
-    Calendar should stay open while they're locked.
   - Try a wrong password, and unlocking with the recovery code.
   - If you have a YubiKey: the gear at the top right, Security and updates, "Add a YubiKey", then
     unlock with it.
@@ -76,14 +73,6 @@ Trace
   - Requests: how to get your data from each platform, and letters that make companies
     delete it (please don't actually send one while testing).
 
-Calendar
-  - Type a reminder in the line at the top, like "Dentist Tue 15:00" or "Gym every Monday
-    7:00", and press Enter.
-  - Add sample reminders and wait for the pop-ups. Do they show up on time, without taking
-    over what you're typing?
-  - Close the window: Sompio keeps running (in the tray, or the menu bar on a Mac), and
-    reminders keep coming, even when it's locked.
-  - More: routines, schedules and groups, and "Import your phone's calendar" with a .ics file.
 
 
 4. REPORTING A PROBLEM

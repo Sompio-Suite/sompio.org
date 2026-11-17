@@ -83,7 +83,7 @@ function PhoneStep({ path, onDone }: { path: string; onDone: () => void }) {
   );
 }
 
-export default function LockScreen({ status, onUnlocked, reason }: Props) {
+export default function LockScreen({ status, onUnlocked }: Props) {
   const [mode, setMode] = useState<Mode>(status.set_up ? "unlock" : "setup");
   const [step, setStep] = useState<SetupStep>("form");
   const [withPicture, setWithPicture] = useState(false);
@@ -203,7 +203,7 @@ export default function LockScreen({ status, onUnlocked, reason }: Props) {
           <Mark />
           <h1>Set up your lock</h1>
           <p className="muted">
-            Vault and Trace hold things only you should see, so they open with a lock. One password opens both. Calendar stays open.
+            Vault and Trace hold things only you should see, so they open with a lock. One password opens both.
           </p>
           <ul className="lock-rules">
             <li><Icon name="lock" size={15} />Only you can open it. Nobody can reset it, not even us.</li>
@@ -230,12 +230,7 @@ export default function LockScreen({ status, onUnlocked, reason }: Props) {
       {mode === "unlock" && (
         <form className="lock-step narrow" onSubmit={(e) => { e.preventDefault(); if (pw) unlock(); }}>
           <Mark />
-          <h1>{reason === "Calendar" ? "Calendar is locked" : "Vault and Trace are locked"}</h1>
-          <p className="muted">
-            {reason === "Calendar"
-              ? "Unlock once more, and Calendar moves to this computer's own protection. After that, it opens without your password."
-              : "Calendar stays open while the rest is locked."}
-          </p>
+          <h1>Vault and Trace are locked</h1>
           <label className="field">
             <span>Password</span>
             <input type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus />

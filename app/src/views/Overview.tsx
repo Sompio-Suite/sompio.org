@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { api, openExternal, type LicenceStatus, type Occurrence, type ScanSummary } from "../api";
+import { openExternal, type LicenceStatus, type ScanSummary } from "../api";
 import { date, n, plural } from "../format";
+
+const LEARN_URL = "https://sompio.org/what-is-personal-information.php";
 import Icon from "../Icon";
-import { accessText, BUY_URL, SUITE } from "../licence";
+import { BUY_URL } from "../licence";
 import type { View } from "../App";
 
 interface Props {
@@ -13,18 +14,17 @@ interface Props {
 }
 
 export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
-  const now = licence?.now ?? Date.now();
   const trialOnly = licence?.apps.every((a) => a.trial_only) ?? false;
   const anyActive = licence?.apps.some((a) => a.active) ?? false;
-  const [next, setNext] = useState<Occurrence | null>(null);
-  useEffect(() => { api.calNext(1).then((n) => setNext(n[0] ?? null)).catch(() => {}); }, []);
+  const found = cleanReady && !!scan && scan.scanned > 0;
+  const cleaned = found && scan!.open === 0;
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
-          <h1>Sompio Suite</h1>
-          <p className="muted">Private tools that keep your data on this computer, locked to you.</p>
+          <h1>Your privacy plan</h1>
+          <p className="muted">Find what you've left online, remove it, and keep your digital footprint safe. Everything happens on this computer.</p>
         </div>
       </div>
 
@@ -71,43 +71,61 @@ export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
         </div>
       )}
 
-      <div className="suite-grid">
-        {SUITE.map((app) => {
-          const access = accessText(licence?.apps.find((a) => a.app === app.key), now, licence?.beta);
-          return (
-            <article key={app.key} className={`suite-card${app.ready ? "" : " soon"}`}>
-              <div className="suite-card-top">
-                <span className="suite-icon"><Icon name={app.icon} /></span>
-                <div>
-                  <h2>{app.name}</h2>
-                  <span className={`access access-${app.ready ? access.tone : "none"}`}>{app.ready ? access.text : app.when}</span>
-                </div>
-              </div>
-              <p>{app.line}</p>
-              {app.key === "clean" && cleanReady && scan && scan.open > 0 && (
-                <p className="small"><strong>{plural(scan.open, "thing", "things")} to review</strong> from {n(scan.scanned)} scanned.</p>
-              )}
-              {app.key === "calendar" && next && (
-                <p className="small"><strong>Next: {next.title}</strong> {next.at.slice(0, 10) === new Date().toLocaleDateString("sv") ? "at" : `on ${new Date(next.at).toLocaleDateString(undefined, { weekday: "long" })} at`} {next.at.slice(11, 16)}</p>
-              )}
-              <div className="suite-card-foot">
-                {app.ready ? (
-                  app.key === "clean" ? (
-                    <button className="primary" onClick={() => onGo("home")}>{cleanReady ? "Open Trace" : "Set up Trace"}</button>
-                  ) : (
-                    <button className="primary" onClick={() => onGo(app.key as View)}>Open {app.name}</button>
-                  )
-                ) : (
-                  <button onClick={() => onGo(app.key as View)}>See what's planned</button>
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      <ol className="plan">
+        <li className="plan-step">
+          <span className="plan-num">1</span>
+          <div className="plan-body">
+            <h2>Learn</h2>
+            <p>What counts as personal information, where it ends up, how it gets misused, and when sharing it is fine. Five minutes, plain words.</p>
+          </div>
+          <div className="plan-act">
+            <button onClick={() => openExternal(LEARN_URL).catch(() => {})}>Read the basics<Icon name="external" size={13} /></button>
+          </div>
+        </li>
+        <li className={`plan-step${found ? " done" : ""}`}>
+          <span className="plan-num">{found ? <Icon name="check" size={16} /> : "2"}</span>
+          <div className="plan-body">
+            <h2>Find</h2>
+            <p>
+              {found
+                ? <>Trace has looked at {n(scan!.scanned)} messages and files. Add more: your mailbox, another folder, or the data you asked companies for.</>
+                : <>Scan your computer and mailbox in minutes. Ask Discord, Instagram and others for your data; Trace reminds you when it's ready.</>}
+            </p>
+          </div>
+          <div className="plan-act">
+            <button className={found ? "" : "primary"} onClick={() => onGo(found ? "sources" : "home")}>{found ? "Add a source" : "Start finding"}</button>
+          </div>
+        </li>
+        <li className={`plan-step${cleaned ? " done" : ""}`}>
+          <span className="plan-num">{cleaned ? <Icon name="check" size={16} /> : "3"}</span>
+          <div className="plan-body">
+            <h2>Clean</h2>
+            <p>
+              {!found
+                ? <>Go through what was found, most risky first. Delete it, and send letters that make companies erase what they hold.</>
+                : cleaned
+                  ? <>Everything found so far is dealt with. Companies still hold copies: ask them to delete what they have.</>
+                  : <><strong>{plural(scan!.open, "thing", "things")} to review</strong>, most risky first. Delete them, then ask companies to erase their copies.</>}
+            </p>
+          </div>
+          <div className="plan-act">
+            <button className={found && !cleaned ? "primary" : ""} disabled={!found} onClick={() => onGo(cleaned ? "requests" : "review")}>{cleaned ? "Ask companies" : "Start cleaning"}</button>
+          </div>
+        </li>
+        <li className="plan-step">
+          <span className="plan-num">4</span>
+          <div className="plan-body">
+            <h2>Secure</h2>
+            <p>Stop leaking from now on: change passwords that were out there, turn on two-step login, and keep your passwords in Vault, encrypted on this computer.</p>
+          </div>
+          <div className="plan-act">
+            <button onClick={() => onGo("vault")}>Open Vault</button>
+          </div>
+        </li>
+      </ol>
 
       <section className="promise">
-        <div><Icon name="lock" /><strong>Stays on this computer</strong><span>No account is needed to use the apps. Your data is never uploaded.</span></div>
+        <div><Icon name="lock" /><strong>Stays on this computer</strong><span>No account, no cloud. Nothing is scanned until you start it, and nothing is uploaded.</span></div>
         <div><Icon name="ticket" /><strong>Keys, not logins</strong><span>A key unlocks what you bought. It's checked here, offline.</span></div>
         <div><Icon name="check" /><strong>Never held hostage</strong><span>When a key runs out, everything stays readable and exportable.</span></div>
       </section>

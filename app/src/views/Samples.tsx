@@ -64,10 +64,9 @@ export default function Samples({ cleanHasData, onCleanDemo, onGo }: Props) {
           <div>
             <strong>Meet Alex Rivers</strong>
             <span className="small muted">
-              One made-up person across all of Sompio. Trace gets years of Alex's chats from Discord, Reddit, Telegram,
+              One made-up person for all of Sompio. Trace gets years of Alex's chats from Discord, Reddit, Telegram,
               Instagram, WhatsApp and email, with every kind of leak Trace looks for. Vault gets Alex's logins, with 2FA codes
-              and weak and reused passwords. Calendar gets reminders that pop up within a minute, and the schedule of Alex's team,
-              kept in New York time.
+              and weak and reused passwords.
             </span>
           </div>
           <button
@@ -78,8 +77,6 @@ export default function Samples({ cleanHasData, onCleanDemo, onGo }: Props) {
                 const done: string[] = [];
                 await api.vaultAddSamples();
                 done.push("Vault");
-                await api.calAddSamples();
-                done.push("Calendar");
                 if (!cleanHasData) {
                   await onCleanDemo();
                   done.push("Trace");
@@ -91,25 +88,6 @@ export default function Samples({ cleanHasData, onCleanDemo, onGo }: Props) {
             {busy === "all" ? "Adding…" : "Add Alex's sample data"}
           </button>
         </div>
-      </section>
-
-      <section className="panel sample-card">
-        <header><Icon name="calendar" /><h2>Calendar</h2></header>
-        <div className="sample-row">
-          <div>
-            <strong>Sample reminders</strong>
-            <span className="small muted">A schedule called "Sample reminders": the first pop-up comes within a minute, then a heads-up, a reminder only for your group, and one every 5 minutes. Remove the schedule to undo it all.</span>
-          </div>
-          <button className="primary" disabled={!!busy} onClick={() => run("cal", async () => { await api.calAddSamples(); onGo("calendar"); })}>Add sample reminders</button>
-        </div>
-        <div className="sample-row">
-          <div>
-            <strong>Sample files</strong>
-            <span className="small muted">A shared schedule with groups and a time zone, and a Desk Reminders folder to bring in.</span>
-          </div>
-          <button disabled={!!busy} onClick={() => files("calendar")}>{busy === "calendar-files" ? "Saving…" : "Save sample files"}</button>
-        </div>
-        {fileList("calendar")}
       </section>
 
       <section className="panel sample-card">

@@ -18,6 +18,7 @@ const GUIDES = [
     ['delete-discord-messages.php', 'How to delete your old Discord messages', 'Discord has no "delete all" button, and deleting your account leaves your messages behind. What actually works, step by step.', 'Discord', 6],
     ['discord-data-package.php', "What's in your Discord data package", 'Every message you ever sent, and more. How to request your copy, what each folder holds, and what to look for.', 'Discord', 4],
     ['delete-reddit-comments.php', 'How to delete your old Reddit posts and comments', 'Find the posts that give away too much, delete them properly, and know what deleting your account does and doesn\'t do.', 'Reddit', 5],
+    ['what-is-personal-information.php', 'What is personal information, and when is sharing it risky?', 'Start here: what counts, where it ends up, how it gets misused, and what is fine to share.', 'Start here', 7],
     ['find-passwords-in-old-chats.php', "How to find passwords you've shared in old chats", 'The Wi-Fi password for a guest, a login for family, a note to yourself. Where passwords hide in chats, mail and notes, and how to make them harmless.', 'Passwords', 5],
     ['move-passwords-out-of-browser.php', 'How to move your passwords out of Chrome, Edge or Firefox', 'Export what your browser saved, bring it into a password manager, and clean up without leaving an unprotected copy behind.', 'Passwords', 5],
     ['remove-location-from-photos.php', 'How to remove the location from your photos', 'Phones save where each photo was taken. How to check, remove it on any computer or phone, and stop it being saved.', 'Photos', 5],
@@ -95,7 +96,7 @@ function site_header(string $here): void
     <div class="wrap top-row">
       <a class="brand" href="./"><img src="logo.svg" alt="" width="28" height="28"> sompio <span class="tag">beta</span></a>
       <nav aria-label="Site">
-        <?= $link('./#tools', 'Features', 'features') ?>
+        <?= $link('./#how', 'How it works', 'features') ?>
         <?= $link('guides.php', 'Guides', 'guide') ?>
         <?= $link('docs.php', 'Documentation', 'docs') ?>
         <a href="<?= e(SOURCE_URL) ?>" class="gh-link" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><?= GITHUB_ICON ?><span class="gh-label">Source code</span></a>
@@ -131,7 +132,7 @@ function site_footer(): void
     ?>
   <footer class="site-foot">
     <div class="wrap foot-row">
-      <div class="foot-brand"><img src="logo.svg" alt="" width="22" height="22"> <strong>sompio</strong> <span class="muted">Private tools for your computer.</span></div>
+      <div class="foot-brand"><img src="logo.svg" alt="" width="22" height="22"> <strong>sompio</strong> <span class="muted">Find what you've left online, and remove it yourself.</span></div>
       <nav aria-label="More">
         <a href="feedback.php">Report a bug</a>
         <a href="security.php">Security</a>

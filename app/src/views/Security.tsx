@@ -67,7 +67,7 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
       <div className="page-head">
         <div>
           <h1>Security</h1>
-          <p className="muted">Vault and Trace are encrypted with your lock. Calendar is encrypted too, and protected by your computer account.</p>
+          <p className="muted">Vault and Trace are encrypted with your lock, and lock again when you step away.</p>
         </div>
         {status.set_up && status.unlocked && <button onClick={onLockNow}><Icon name="lock" size={16} />Lock now</button>}
       </div>
@@ -83,7 +83,7 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
       {status.set_up && <>
       <section className="setting">
         <h3>Lock when I'm away</h3>
-        <p className="muted">Vault and Trace lock themselves after this long without you using Sompio. Calendar and reminders keep going.</p>
+        <p className="muted">Vault and Trace lock themselves after this long without you using Sompio. Deadline reminders keep coming.</p>
         <select value={idleMinutes} onChange={(e) => onIdleMinutes(Number(e.target.value))}>
           {[5, 15, 30, 60].map((m) => <option key={m} value={m}>After {m} minutes</option>)}
           <option value={0}>Only when I close it</option>
