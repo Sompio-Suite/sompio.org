@@ -14,7 +14,7 @@ site_header('feedback');
 
     <section class="card">
       <h2>From inside Sompio</h2>
-      <p>Click <strong>?</strong> at the top right of Sompio, then <strong>Report a bug</strong>. (In older versions it's in the menu on the left.) Write what happened, and Sompio can add its version,
+      <p>Click <strong>Report a bug</strong> at the top right of Sompio. (In older versions it's in the menu on the left.) Write what happened, and Sompio can add its version,
         your system and the last lines of its problems log for you. You see everything before it's sent, and nothing
         is sent until you press Send.</p>
       <p class="small muted">Using an older version without that button? Update Sompio first, or email us.</p>

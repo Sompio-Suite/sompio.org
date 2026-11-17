@@ -133,9 +133,6 @@ function site_footer(): void
     <div class="wrap foot-row">
       <div class="foot-brand"><img src="logo.svg" alt="" width="22" height="22"> <strong>sompio</strong> <span class="muted">Private tools for your computer.</span></div>
       <nav aria-label="More">
-        <a href="docs.php">Documentation</a>
-        <a href="guides.php">Guides</a>
-        <a href="<?= e(SOURCE_URL) ?>" class="gh-link" rel="noopener noreferrer"><?= GITHUB_ICON ?>Source code</a>
         <a href="feedback.php">Report a bug</a>
         <a href="security.php">Security</a>
         <a href="privacy.php">Privacy</a>

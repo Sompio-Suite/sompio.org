@@ -36,7 +36,7 @@ export default function Overview({ licence, scan, cleanReady, onGo }: Props) {
             <span>
               Your 30-day free trial starts when Sompio launches. It's a beta, so things can still go wrong: keep a copy of
               your passwords (Vault, then Auto-type, import and export, then Save as KeePass file) and your recovery sheet.
-              Found a problem or have an idea? Tell us with Report a bug (also under ? at the top).
+              Found a problem or have an idea? Tell us with Report a bug (also at the top right).
             </span>
           </div>
           <div className="notice-actions">

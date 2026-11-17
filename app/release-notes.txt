@@ -1,3 +1,3 @@
-The menu is at the top: Overview, Vault, Trace and Calendar as tabs, with the lock, Help (?) and Settings (gear) on the right.
+The menu is at the top: Overview, Vault, Trace and Calendar as tabs, with the lock, Report a bug, Help (?) and Settings (gear) on the right.
 "Licences" is now "Activate a product", under Settings.
 The beta notice on Overview shows its Report a bug button properly.

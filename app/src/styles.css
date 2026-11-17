@@ -1335,6 +1335,7 @@ svg.logo { display: block; }
 }
 .pill .icon { color: var(--ink-3); }
 .pill:hover { border-color: var(--ink-3); }
+.pill.on { background: var(--nav-active); border-color: var(--nav-active); }
 .pill.accent { border-color: #b9dcbc; background: var(--accent-soft, #e9f4ea); color: var(--accent-text); font-weight: 600; }
 .pill.accent .icon { color: var(--accent-text); }
 .icon-btn {

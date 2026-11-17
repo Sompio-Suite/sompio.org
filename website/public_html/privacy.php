@@ -53,7 +53,7 @@ site_header('privacy');
         </ul>
 
         <h3>When you report a bug</h3>
-        <p>You send reports from inside Sompio, with "Report a bug" (under ? at the top), or by email. The app sends nothing until you press Send, and shows you everything it will send first.</p>
+        <p>You send reports from inside Sompio, with "Report a bug" at the top of the app, or by email. The app sends nothing until you press Send, and shows you everything it will send first.</p>
         <ul class="points">
           <li><strong>What:</strong> your message, the part of Sompio it's about, Sompio's version and your system (for example "windows 10.0.22631"), and anything optional you add: an email address for a reply, technical details and a screenshot. Technical details are the last lines of Sompio's problems log: error messages only, with your computer's user name taken out of folder paths.</li>
           <li><strong>Why:</strong> to find and fix problems, and to reply if you asked us to.</li>

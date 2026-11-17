@@ -300,6 +300,10 @@ export default function App() {
               <Icon name="lock" size={14} /><strong>Set up the lock</strong>
             </button>
           )}
+          {/* Its own button during the beta, so testers always find it */}
+          <button className={`pill${view === "report" ? " on" : ""}`} onClick={() => setView("report")}>
+            <Icon name="bug" size={14} />Report a bug
+          </button>
           <div className="menu-wrap">
             <button className="icon-btn" aria-label="Help" aria-haspopup="menu" aria-expanded={menu === "help"} title="Help" onClick={() => setMenu(menu === "help" ? null : "help")}>
               <span className="q">?</span>
@@ -307,7 +311,6 @@ export default function App() {
             {menu === "help" && (
               <div className="dropdown" role="menu">
                 <button role="menuitem" onClick={() => { setMenu(null); openExternal(DOCS_URL).catch(() => {}); }}><Icon name="book" size={16} />Documentation<Icon name="external" size={12} /></button>
-                <button role="menuitem" onClick={() => { setMenu(null); setView("report"); }}><Icon name="bug" size={16} />Report a bug</button>
                 <button role="menuitem" onClick={() => { setMenu(null); setView("samples"); }}><Icon name="sparkle" size={16} />Samples</button>
               </div>
             )}

@@ -88,7 +88,7 @@ Calendar
 
 4. REPORTING A PROBLEM
 ----------------------
-Click ? at the top right, then "Report a bug". Write what you did and what happened, and add a
+Click "Report a bug" at the top right. Write what you did and what happened, and add a
 screenshot if you can: it helps a lot. Nothing is sent until you press Send.
 
 Leave "Add technical details" ticked: it adds the last lines of Sompio's problems log, a short
