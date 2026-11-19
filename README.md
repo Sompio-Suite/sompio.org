@@ -225,14 +225,14 @@ and installed copies offer new versions themselves. GitHub builds everything on 
 
 1. Once: run `Build Sompio.bat` on your PC, so `licence/public.key` holds the public half of your signing key, and
    `Set up updates.bat` for the update key. Add the secrets `TAURI_SIGNING_PRIVATE_KEY`, `SOMPIO_PUBLISH_TOKEN`,
-   `SOMPIO_UPDATE_TOKEN` and, optionally, `DISCORD_WEBHOOK`.
+   and `SOMPIO_UPDATE_TOKEN`.
 2. Each version: raise the version (`app/package.json`, `app/src-tauri/tauri.conf.json`, `app/src-tauri/Cargo.toml`
    and its `Cargo.lock` entry, `extension/manifest.json`), write `app/release-notes.txt` (one line per change), then
    push to the `release` branch.
 3. The **Publish** workflow builds Windows (NSIS installer), Mac (one .dmg for Apple silicon and Intel) and Linux
    (AppImage and .deb). The Windows installer goes to sompio.org; the Mac and Linux files go on the GitHub release,
    with every file's SHA-256 fingerprint. sompio.org then offers the update to installed copies on all three
-   systems, and the notes are posted to Discord. If the Mac or Linux build fails, Windows still goes out.
+   systems. If the Mac or Linux build fails, Windows still goes out.
 4. To swap the build of the version that's already out (same number), run **Publish** by hand with "replace" ticked.
 
 The **Check** workflow compiles Windows, Mac and Linux and runs Trace's tests on every push to `master`. The

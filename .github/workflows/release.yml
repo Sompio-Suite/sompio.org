@@ -24,10 +24,6 @@ on:
         description: "Replace the version that's already out (same version number, new build)"
         type: boolean
         default: false
-      announce:
-        description: "Post the release notes to Discord"
-        type: boolean
-        default: true
 
 concurrency:
   group: publish
@@ -267,36 +263,3 @@ jobs:
           cat reply.txt
           # 409: this version is already on sompio.org (a rebuild without a version change), which is fine
           if [ "$code" != "200" ] && [ "$code" != "409" ]; then echo "::error::sompio.org answered $code"; exit 1; fi
-          # Only a version that's new (or replaced) on sompio.org gets announced
-          if [ "$code" = "200" ]; then echo "NEW_VERSION=1" >> "$GITHUB_ENV"; fi
-      - name: Announce it on Discord
-        # Posts the release notes to the channels behind the DISCORD_WEBHOOK and DISCORD_WEBHOOK_2 secrets
-        # (for example the testers' server and the public Sompio server). Secrets that aren't set are
-        # skipped; when this version was already on sompio.org, nothing is posted.
-        if: env.NEW_VERSION == '1' && (github.event_name != 'workflow_dispatch' || inputs.announce)
-        env:
-          HOOK1: ${{ secrets.DISCORD_WEBHOOK }}
-          HOOK2: ${{ secrets.DISCORD_WEBHOOK_2 }}
-        run: |
-          HOOK1=$(printf '%s' "$HOOK1" | tr -d ' \r\n\t'); HOOK2=$(printf '%s' "$HOOK2" | tr -d ' \r\n\t')
-          if [ -z "$HOOK1$HOOK2" ]; then echo "No Discord webhook secrets: skipping the announcement"; exit 0; fi
-          [ -n "$HOOK1" ] && echo "::add-mask::$HOOK1"; [ -n "$HOOK2" ] && echo "::add-mask::$HOOK2"
-          python3 - <<'PY' > discord.json
-          import json, os
-          version = os.environ["VERSION"]
-          try:
-              notes = open("app/release-notes.txt", encoding="utf-8").read().strip()
-          except OSError:
-              notes = ""
-          lines = [l.strip() for l in notes.splitlines() if l.strip()] or ["Bug fixes and improvements."]
-          # Changelog style: the notes in a grey code box, like a release log
-          box = "\n".join("- " + l.replace("`", "'") for l in lines)
-          text = (f"**Sompio {version}**\n```\n{box}\n```\n"
-                  f"Open Sompio and click **Update now**, or download it at <https://sompio.org/download.php>")
-          print(json.dumps({"username": "Sompio", "allowed_mentions": {"parse": []}, "content": text[:2000]}))
-          PY
-          for HOOK in "$HOOK1" "$HOOK2"; do
-            [ -z "$HOOK" ] && continue
-            code=$(curl -sS -o reply.txt -w '%{http_code}' -H "Content-Type: application/json" --data @discord.json "$HOOK" || echo 000)
-            if [ "$code" != "204" ] && [ "$code" != "200" ]; then cat reply.txt; echo "::warning::Discord answered $code; the release itself is fine"; fi
-          done
