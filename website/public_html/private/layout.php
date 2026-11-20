@@ -101,7 +101,7 @@ function site_header(string $here): void
         <?= $link('docs.php', 'Documentation', 'docs') ?>
         <a href="<?= e(SOURCE_URL) ?>" class="gh-link" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><?= GITHUB_ICON ?><span class="gh-label">Source code</span></a>
         <a href="tor.php" class="gh-link tor-link"<?= $here === 'tor' ? ' aria-current="page"' : '' ?> aria-label="Open in Tor" title="Open sompio.org in Tor Browser"><?= TOR_ICON ?><span class="gh-label">Open in Tor</span></a>
-        <a class="nav-tester<?= $here === 'download' ? ' on' : '' ?>" href="download.php"<?= $here === 'download' ? ' aria-current="page"' : '' ?>>Download</a>
+        <a class="nav-tester<?= $here === 'download' ? ' on' : '' ?>" href="./#download"<?= $here === 'download' ? ' aria-current="page"' : '' ?>>Download</a>
       </nav>
     </div>
   </header>

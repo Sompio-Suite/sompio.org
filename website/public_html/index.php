@@ -1,5 +1,5 @@
 <?php
-// sompio.org: the public front page. The beta download is on download.php.
+// sompio.org: the public front page, with the download section (download.php?get=1 serves the file).
 declare(strict_types=1);
 require __DIR__ . '/private/lib.php';
 page_head('Sompio · Find what you\'ve left online, and remove it yourself', 'Sompio helps you understand what\'s out there about you, find it in your chats, mail and files, clean it up and protect yourself from now on. On your own computer: no account, no cloud, no data broker in between.');
@@ -15,13 +15,13 @@ site_header('home');
           <p class="lead">A password in an old Discord chat. A passport scan in your email. Your address in a group chat from 2019. Sompio scans your own computer, mail and chats, shows you what's risky, and helps you delete it.</p>
           <div class="cta-row">
             <?php if ($dl): ?>
-              <a class="button primary big-cta" href="download.php?start=1" data-os="<?= e($os) ?>">Download free for <?= e($dl['label']) ?></a>
+              <a class="button primary big-cta dl-go" href="<?= e($dl['url']) ?>" data-os="<?= e(strtolower($dl['label'])) ?>" rel="nofollow">Download free for <?= e($dl['label']) ?></a>
               <a class="cta-link" href="#how">See how it works</a>
             <?php elseif ($os === 'phone'): ?>
-              <button class="button primary big-cta" type="button" data-share="https://sompio.org/download.php">Send the link to your computer</button>
+              <button class="button primary big-cta" type="button" data-share="https://sompio.org/#download">Send the link to your computer</button>
               <a class="cta-link" href="#how">See how it works</a>
             <?php else: ?>
-              <a class="button primary big-cta" href="download.php">Download free</a>
+              <a class="button primary big-cta" href="#download">Download free</a>
               <a class="cta-link" href="#how">See how it works</a>
             <?php endif; ?>
           </div>
@@ -116,6 +116,13 @@ site_header('home');
       </article>
     </section>
 
+    <section id="download" class="wrap dl-section">
+<?php if ($rel): $r = $rel; require PRIVATE_DIR . '/download_section.php'; else: ?>
+      <h2>Download Sompio</h2>
+      <p class="muted">The beta isn't up yet. Check back shortly.</p>
+<?php endif; ?>
+    </section>
+
     <section class="wrap why-diy">
       <div class="card why-card">
         <div>
@@ -158,7 +165,7 @@ site_header('home');
         <h2>Try it now, free</h2>
         <p>The beta is open to everyone, with everything unlocked. Your feedback decides what Sompio becomes.</p>
         <ul class="ticks">
-          <li><a href="download.php">Download Sompio free</a> for <?= e(systems_text()) ?></li>
+          <li><a href="#download">Download Sompio free</a> for <?= e(systems_text()) ?></li>
           <li>Found a problem or have an idea? Click <a href="feedback.php">Report a bug</a> at the top of Sompio: it decides what gets fixed first</li>
           <li>New versions come to you inside Sompio</li>
         </ul>

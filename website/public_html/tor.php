@@ -46,7 +46,7 @@ site_header('tor');
       <h2>Good to know</h2>
       <ul class="points">
         <li>Sompio itself works offline. It only goes online to check for new versions (you can switch that off), and when you connect your mailbox or Telegram yourself.</li>
-        <li>Using Tails? See the Linux steps on the <a href="download.php#for-linux">download page</a>.</li>
+        <li>Using Tails? See the Linux steps on the <a href="./#for-linux">download section</a>.</li>
       </ul>
     </section>
   </main>

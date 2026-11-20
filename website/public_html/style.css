@@ -440,3 +440,7 @@ details.fingerprint[open] { display: grid; gap: 0.45rem; }
 }
 .dl-started { display: flex; flex-direction: column; gap: 0.15rem; background: #e9f4ea; border: 1px solid #b9dcbc; border-radius: 6px; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.9rem; }
 .dl-started[hidden] { display: none; }
+.dl-section { padding-top: 2.5rem; scroll-margin-top: 70px; }
+.dl-section .dl-title { font-size: 1.6rem; }
+#install { scroll-margin-top: 70px; }
+.dl-section .hero .beta-note { flex: none; }

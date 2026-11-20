@@ -26,23 +26,23 @@
   show(fromLink || guess);
 })();
 
-// After a download starts (from the front page's button, or a click here): say so, and show the
-// install steps for that system, since the computer is about to ask questions.
+// After a download starts (the front page's big button, or a button in the download section): say
+// so, and show the install steps for that system, since the computer is about to ask questions.
 (function () {
-  var main = document.querySelector("main[data-autostart]");
   var note = document.querySelector(".dl-started");
-  function started() {
+  function started(os) {
+    var tab = os && document.querySelector('.os-tab[data-os="' + os + '"]');
+    if (tab) tab.click();
     if (note) note.hidden = false;
     var steps = document.getElementById("install");
-    if (steps) setTimeout(function () { steps.scrollIntoView({ behavior: "smooth", block: "start" }); }, 700);
+    if (steps) setTimeout(function () { steps.scrollIntoView({ behavior: "smooth", block: "start" }); }, 400);
   }
-  document.querySelectorAll(".os-panel .button.primary.big").forEach(function (b) {
-    b.addEventListener("click", started);
+  document.querySelectorAll(".dl-go, .os-panel .button.primary.big").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var panel = b.closest(".os-panel");
+      started(b.getAttribute("data-os") || (panel && panel.getAttribute("data-os")));
+    });
   });
-  if (main) {
-    setTimeout(function () { location.href = main.getAttribute("data-autostart"); }, 500);
-    started();
-  }
 })();
 
 // Front page on a phone: send the download link to yourself
