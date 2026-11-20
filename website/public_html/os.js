@@ -25,3 +25,39 @@
   });
   show(fromLink || guess);
 })();
+
+// After a download starts (from the front page's button, or a click here): say so, and show the
+// install steps for that system, since the computer is about to ask questions.
+(function () {
+  var main = document.querySelector("main[data-autostart]");
+  var note = document.querySelector(".dl-started");
+  function started() {
+    if (note) note.hidden = false;
+    var steps = document.getElementById("install");
+    if (steps) setTimeout(function () { steps.scrollIntoView({ behavior: "smooth", block: "start" }); }, 700);
+  }
+  document.querySelectorAll(".os-panel .button.primary.big").forEach(function (b) {
+    b.addEventListener("click", started);
+  });
+  if (main) {
+    setTimeout(function () { location.href = main.getAttribute("data-autostart"); }, 500);
+    started();
+  }
+})();
+
+// Front page on a phone: send the download link to yourself
+(function () {
+  var b = document.querySelector("[data-share]");
+  if (!b) return;
+  b.addEventListener("click", function () {
+    var url = b.getAttribute("data-share");
+    var done = document.querySelector("[data-share-done]");
+    if (navigator.share) {
+      navigator.share({ title: "Sompio", text: "Download Sompio on my computer", url: url }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(function () { if (done) done.hidden = false; });
+    } else {
+      location.href = "mailto:?subject=Sompio&body=" + encodeURIComponent(url);
+    }
+  });
+})();

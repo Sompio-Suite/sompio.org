@@ -13,6 +13,8 @@ $osGuess = preg_match('/Mac OS X|Macintosh/', $ua) && !preg_match('/iPhone|iPad/
     : (preg_match('/Linux/', $ua) && !preg_match('/Android/', $ua) && (isset($r['platforms']['linux_appimage']) || isset($r['platforms']['linux_deb'])) ? 'linux' : 'windows');
 $hide = fn(string $os) => $os === $osGuess ? '' : ' hidden';
 $tabOn = fn(string $os) => $os === $osGuess ? ' on" aria-selected="true' : '" aria-selected="false';
+// Coming from the front page's big button: start the right download straight away (os.js)
+$start = isset($_GET['start']) && visitor_os() !== 'phone' ? download_for($r, $osGuess) : null;
 
 if (isset($_GET['get'])) {
     if ($r === null) {
@@ -40,7 +42,7 @@ if (isset($_GET['get'])) {
 page_head('Download the beta · Sompio', 'Download the free Sompio beta for Windows, Mac and Linux: find what you\'ve left online and remove it yourself, all offline and encrypted on your computer.');
 site_header('download');
 ?>
-  <main class="wrap">
+  <main class="wrap"<?= $start ? ' data-autostart="' . e($start['url']) . '"' : '' ?>>
     <div class="hero">
       <div class="hero-intro">
         <p class="status-pill"><span class="dot" aria-hidden="true"></span> Open beta · free until launch</p>
@@ -53,11 +55,10 @@ site_header('download');
         </ul>
         <div class="beta-note">
           <h2>It's a beta</h2>
-          <p>Sompio works, but things can still break or change. Two habits keep you safe: in Vault, save a copy of your passwords now and then (<em>Auto-type, import and export</em>, then <em>Save as KeePass file</em>), and keep the recovery sheet Sompio gives you when you set up the lock. Nobody can reset the lock for you, not even us.</p>
-          <p>Found a problem, or have an idea? Click <strong>Report a bug</strong> in Sompio's menu, or <a href="feedback.php">see other ways</a>. It decides what gets fixed first.</p>
+          <p>Sompio works, but things can still change. Keep the recovery sheet Sompio gives you when you set up the lock, and now and then save a copy of your passwords from Vault. Found a problem? Click <strong>Report a bug</strong> at the top of Sompio.</p>
         </div>
       </div>
-      <div class="card download">
+      <div class="card download" id="top-download">
         <?php if ($r): $pl = $r['platforms']; $hasMac = isset($pl['mac']); $hasLinux = isset($pl['linux_appimage']) || isset($pl['linux_deb']); ?>
           <h2>Sompio <?= e($r['version']) ?></h2>
           <?php if ($hasMac || $hasLinux): ?>
@@ -115,6 +116,10 @@ site_header('download');
     </div>
 
     <section id="install" class="hero-install">
+      <div class="dl-started" role="status"<?= $start ? '' : ' hidden' ?>>
+        <strong>Your download has started.</strong>
+        <span>Here's what to click when your computer asks. Didn't start? <a href="#top-download">Use the download button</a>.</span>
+      </div>
       <div class="os-panel" data-os="windows"<?= $hide('windows') ?>>
         <h2>Installing on Windows: it will warn you, and that's expected</h2>
         <p>The beta isn't signed with a Microsoft certificate yet (the finished version will be). Until then, Windows and your browser don't know Sompio and show warnings. Here's what you'll see and what to click.</p>
@@ -202,7 +207,7 @@ site_header('download');
           <ul>
             <li>Start with what's quick: folders on your computer, your mailbox, a WhatsApp chat.</li>
             <li>Ask Discord, Instagram and the rest for your data at the same time; Sompio reminds you when it should be ready.</li>
-            <li>Want to look first? The Samples page has a made-up person to try everything on.</li>
+            <li>Want to look first? Click the gear at the top right, then <em>Sample data for testing</em>: a made-up person to try everything on.</li>
           </ul>
         </div>
         <div class="card">

@@ -6,20 +6,50 @@ page_head('Sompio · Find what you\'ve left online, and remove it yourself', 'So
 site_header('home');
 ?>
   <main>
+    <?php $os = visitor_os(); $rel = latest_release(); $dl = download_for($rel, $os); ?>
     <section class="home-hero">
       <div class="wrap home-hero-row">
         <div class="home-hero-text">
-          <p class="status-pill"><span class="dot" aria-hidden="true"></span> Open beta · free</p>
+          <p class="status-pill"><span class="dot" aria-hidden="true"></span> Free · no account · nothing uploaded</p>
           <h1>Find what you've left online. <span class="hl">Remove it yourself.</span></h1>
-          <p class="lead">Most of what you've typed online is still sitting on someone's server: an address in an old chat, a password sent to a friend, a passport scan in an email. Sompio helps you understand what's out there, find it, clean it up, and keep your digital footprint safe from now on.</p>
+          <p class="lead">A password in an old Discord chat. A passport scan in your email. Your address in a group chat from 2019. Sompio scans your own computer, mail and chats, shows you what's risky, and helps you delete it.</p>
           <div class="cta-row">
-            <a class="button primary" href="download.php">Download the beta</a>
-            <a class="button" href="what-is-personal-information.php">Start with the basics</a>
+            <?php if ($dl): ?>
+              <a class="button primary big-cta" href="download.php?start=1" data-os="<?= e($os) ?>">Download free for <?= e($dl['label']) ?></a>
+              <a class="cta-link" href="#how">See how it works</a>
+            <?php elseif ($os === 'phone'): ?>
+              <button class="button primary big-cta" type="button" data-share="https://sompio.org/download.php">Send the link to your computer</button>
+              <a class="cta-link" href="#how">See how it works</a>
+            <?php else: ?>
+              <a class="button primary big-cta" href="download.php">Download free</a>
+              <a class="cta-link" href="#how">See how it works</a>
+            <?php endif; ?>
           </div>
-          <p class="small muted">Free for <?= e(systems_text()) ?>. It all happens on your computer: no account, no cloud.</p>
+          <p class="cta-note small muted">
+            <?php if ($os === 'phone'): ?>
+              Sompio runs on <?= e(systems_text()) ?>, not on phones (yet). <span data-share-done hidden>Link copied: paste it in a message or email to yourself.</span>
+            <?php else: ?>
+              <?php $others = array_values(array_diff(['Windows', 'Mac', 'Linux'], [$dl['label'] ?? ''], str_contains(systems_text(), 'Mac') ? [] : ['Mac', 'Linux'])); ?>
+              <?= $others ? 'Also for ' . e(implode(' and ', $others)) . ' · ' : '' ?><?= $dl ? e(human_size((int) $dl['size'])) . ' · ' : '' ?>Free during the beta · <a href="<?= e(SOURCE_URL) ?>" rel="noopener noreferrer">Source code on GitHub</a>
+            <?php endif; ?>
+          </p>
         </div>
-        <figure class="shot shot-hero">
-          <img src="<?= asset('img/trace.webp') ?>" width="1280" height="780" alt="Sompio's Trace tool listing ID numbers, passport numbers, backup codes and bank numbers found in sample chats, sorted by risk.">
+        <figure class="found-demo" aria-label="Example of what Sompio finds">
+          <div class="fd-head">
+            <span class="fd-title">Trace found 23 things in your chats and files</span>
+            <span class="fd-tag">Example</span>
+          </div>
+          <ul class="fd-list">
+            <li><i class="fd-dot hi"></i><div><b>Password</b><span>Discord, chat with a friend · 2019</span></div><code>hunter2••••</code><em class="fd-sev hi">Fix now</em></li>
+            <li><i class="fd-dot hi"></i><div><b>Passport number</b><span>Gmail, sent to a landlord · 2021</span></div><code>NXC4••••</code><em class="fd-sev hi">Fix now</em></li>
+            <li><i class="fd-dot hi"></i><div><b>Bank number (IBAN)</b><span>WhatsApp group · 2022</span></div><code>NL91 ••••</code><em class="fd-sev hi">Fix now</em></li>
+            <li><i class="fd-dot mid"></i><div><b>Home address</b><span>Discord server · 2020</span></div><code>Keizers••••</code><em class="fd-sev mid">Worth a look</em></li>
+            <li><i class="fd-dot mid"></i><div><b>Date of birth</b><span>Reddit comment · 2018</span></div><code>14-03-••••</code><em class="fd-sev mid">Worth a look</em></li>
+          </ul>
+          <div class="fd-foot">
+            <div class="fd-score"><span class="fd-ring"><b>64</b></span><div><b>Exposure score</b><span>12 after you clean up</span></div></div>
+            <span class="fd-btn">Clean up, most risky first</span>
+          </div>
         </figure>
       </div>
     </section>
@@ -128,7 +158,7 @@ site_header('home');
         <h2>Try it now, free</h2>
         <p>The beta is open to everyone, with everything unlocked. Your feedback decides what Sompio becomes.</p>
         <ul class="ticks">
-          <li><a href="download.php">Download the beta</a> for <?= e(systems_text()) ?></li>
+          <li><a href="download.php">Download Sompio free</a> for <?= e(systems_text()) ?></li>
           <li>Found a problem or have an idea? Click <a href="feedback.php">Report a bug</a> at the top of Sompio: it decides what gets fixed first</li>
           <li>New versions come to you inside Sompio</li>
         </ul>
@@ -155,4 +185,5 @@ site_header('home');
       </div>
     </section>
   </main>
+<script src="<?= asset('os.js') ?>" defer></script>
 <?php site_footer(); ?>

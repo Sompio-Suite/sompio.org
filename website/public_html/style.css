@@ -402,3 +402,41 @@ details.fingerprint[open] { display: grid; gap: 0.45rem; }
   .why-card { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 560px) { .journey { grid-template-columns: 1fr; } }
+
+/* Front page: one big download button for the visitor's system, and an example of what Trace finds */
+.big-cta { font-size: 1.08rem; padding: 0.8rem 1.5rem; box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25); }
+.cta-row { align-items: center; }
+.cta-link { font-weight: 600; text-decoration: none; padding: 0.5rem 0.4rem; }
+.cta-link:hover { text-decoration: underline; }
+.cta-note { margin-top: 0.7rem; }
+.found-demo { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(29, 33, 37, 0.10); overflow: hidden; font-size: 0.9rem; }
+.fd-head { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; border-bottom: 1px solid var(--line); background: var(--soft); }
+.fd-title { font-weight: 600; }
+.fd-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 4px; padding: 0.05rem 0.4rem; }
+.fd-list { list-style: none; margin: 0; padding: 0.3rem 0; }
+.fd-list li { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 0.7rem; padding: 0.55rem 1rem; border-bottom: 1px solid #f0f2f4; }
+.fd-list li:last-child { border-bottom: 0; }
+.fd-list div { display: flex; flex-direction: column; min-width: 0; }
+.fd-list div span { color: var(--ink-2); font-size: 0.8rem; }
+.fd-list code { background: #fff6d6; font-size: 0.8rem; }
+.fd-dot { width: 9px; height: 9px; border-radius: 50%; }
+.fd-dot.hi { background: var(--red); } .fd-dot.mid { background: #b26a00; }
+.fd-sev { font-style: normal; font-size: 0.75rem; font-weight: 600; border-radius: 999px; padding: 0.1rem 0.55rem; white-space: nowrap; }
+.fd-sev.hi { background: #fdecea; color: #a8281c; } .fd-sev.mid { background: #fff1dc; color: #8a5200; }
+.fd-foot { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.8rem 1rem; border-top: 1px solid var(--line); background: var(--soft); }
+.fd-score { display: flex; align-items: center; gap: 0.7rem; }
+.fd-score div { display: flex; flex-direction: column; line-height: 1.3; }
+.fd-score div span { color: var(--ink-2); font-size: 0.8rem; }
+.fd-ring { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#d9822b 0 64%, #e6e9ec 64% 100%); position: relative; }
+.fd-ring::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--soft); }
+.fd-ring b { position: relative; font-size: 0.95rem; }
+.fd-btn { background: var(--green); color: #fff; border-radius: 5px; padding: 0.4rem 0.8rem; font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+@media (max-width: 560px) {
+  .fd-list li { grid-template-columns: auto 1fr auto; }
+  .fd-list code { display: none; }
+  .fd-btn { display: none; }
+  .big-cta { width: 100%; }
+  .cta-row { flex-direction: column; align-items: stretch; text-align: center; }
+}
+.dl-started { display: flex; flex-direction: column; gap: 0.15rem; background: #e9f4ea; border: 1px solid #b9dcbc; border-radius: 6px; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.9rem; }
+.dl-started[hidden] { display: none; }

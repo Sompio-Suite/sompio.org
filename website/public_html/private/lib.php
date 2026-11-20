@@ -58,6 +58,41 @@ function systems_text(): string
     return $more ? 'Windows, ' . implode(' and ', $more) : 'Windows 10 and 11';
 }
 
+/** The visitor's system from the browser's user agent: windows, mac, linux or phone. */
+function visitor_os(): string
+{
+    $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+    if (preg_match('/iPhone|iPad|iPod|Android|Mobile/', $ua)) {
+        return 'phone';
+    }
+    if (preg_match('/Mac OS X|Macintosh/', $ua)) {
+        return 'mac';
+    }
+    if (preg_match('/Linux|X11|CrOS/', $ua)) {
+        return 'linux';
+    }
+    return 'windows';
+}
+
+/**
+ * The one download that fits this visitor: the file's address, a button label and its size, or
+ * null on a phone or when there's nothing for their system yet.
+ */
+function download_for(?array $r, string $os): ?array
+{
+    if ($r === null) {
+        return null;
+    }
+    $pl = $r['platforms'] ?? [];
+    return match (true) {
+        $os === 'windows' => ['url' => 'download.php?get=1', 'label' => 'Windows', 'size' => $r['size']],
+        $os === 'mac' && isset($pl['mac']) => ['url' => $pl['mac']['url'], 'label' => 'Mac', 'size' => $pl['mac']['size']],
+        $os === 'linux' && isset($pl['linux_appimage']) => ['url' => $pl['linux_appimage']['url'], 'label' => 'Linux', 'size' => $pl['linux_appimage']['size']],
+        $os === 'linux' && isset($pl['linux_deb']) => ['url' => $pl['linux_deb']['url'], 'label' => 'Linux', 'size' => $pl['linux_deb']['size']],
+        default => null,
+    };
+}
+
 function human_size(int $bytes): string
 {
     return $bytes >= 1048576 ? number_format($bytes / 1048576, 1) . ' MB' : max(1, (int) round($bytes / 1024)) . ' KB';
