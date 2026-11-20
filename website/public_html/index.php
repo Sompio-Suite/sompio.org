@@ -192,5 +192,4 @@ site_header('home');
       </div>
     </section>
   </main>
-<script src="<?= asset('os.js') ?>" defer></script>
 <?php site_footer(); ?>

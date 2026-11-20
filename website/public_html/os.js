@@ -33,8 +33,16 @@
   function started(os) {
     var tab = os && document.querySelector('.os-tab[data-os="' + os + '"]');
     if (tab) tab.click();
-    if (note) note.hidden = false;
     var steps = document.getElementById("install");
+    if (!steps) {
+      // Another page: a note at the bottom, with a link to the install steps on the front page
+      var toast = document.querySelector(".dl-toast");
+      if (toast) {
+        toast.hidden = false;
+      }
+      return;
+    }
+    if (note) note.hidden = false;
     if (steps) setTimeout(function () { steps.scrollIntoView({ behavior: "smooth", block: "start" }); }, 400);
   }
   document.querySelectorAll(".dl-go, .os-panel .button.primary.big").forEach(function (b) {

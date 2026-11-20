@@ -101,7 +101,12 @@ function site_header(string $here): void
         <?= $link('docs.php', 'Documentation', 'docs') ?>
         <a href="<?= e(SOURCE_URL) ?>" class="gh-link" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><?= GITHUB_ICON ?><span class="gh-label">Source code</span></a>
         <a href="tor.php" class="gh-link tor-link"<?= $here === 'tor' ? ' aria-current="page"' : '' ?> aria-label="Open in Tor" title="Open sompio.org in Tor Browser"><?= TOR_ICON ?><span class="gh-label">Open in Tor</span></a>
-        <a class="nav-tester<?= $here === 'download' ? ' on' : '' ?>" href="./#download"<?= $here === 'download' ? ' aria-current="page"' : '' ?>>Download</a>
+        <?php $navDl = download_for(latest_release(), visitor_os()); ?>
+        <?php if ($navDl): ?>
+          <a class="nav-tester dl-go" href="<?= e($navDl['url']) ?>" data-os="<?= e(strtolower($navDl['label'])) ?>" rel="nofollow" title="Download Sompio for <?= e($navDl['label']) ?>">Download</a>
+        <?php else: ?>
+          <a class="nav-tester" href="./#download">Download</a>
+        <?php endif; ?>
       </nav>
     </div>
   </header>
@@ -143,6 +148,11 @@ function site_footer(): void
       <p class="small muted">This site has no trackers, no ads, no analytics and no tracking cookies.</p>
     </div>
   </footer>
+  <div class="dl-toast" role="status" hidden>
+    <strong>Your download has started.</strong>
+    <span>Your computer will warn you about a new program: <a href="./#install">here's what to click</a>.</span>
+  </div>
+  <script src="<?= asset('os.js') ?>" defer></script>
 </body>
 </html>
 <?php
