@@ -359,8 +359,24 @@ fn validate(kind: Kind, text: &str, start: usize, end: usize) -> bool {
         }
         Kind::Postcode => {
             let letters = &m[m.len() - 2..];
+            let prev = before.trim_end_matches([' ', '\t']).chars().next_back();
+            let next = after.trim_start_matches([' ', '\t']).chars().next();
+            // The last 120 characters before it, on the same line.
+            let line = before.rsplit('\n').next().unwrap_or("");
+            let mut cut = line.len().saturating_sub(120);
+            while !line.is_char_boundary(cut) {
+                cut += 1;
+            }
+            let near = line[cut..].to_lowercase();
             !matches!(letters, "SA" | "SD" | "SS" | "AM" | "PM" | "GB" | "MB" | "KB" | "TB" | "HZ")
                 && !after.starts_with(|c: char| c.is_alphanumeric())
+                // The year of a date ("07/06/2018 MC") or part of a longer number or code.
+                && !matches!(prev, Some('/' | '-' | '.' | '#' | '_') | Some('0'..='9'))
+                && !next.is_some_and(|c| c.is_ascii_digit())
+                // A company's own address, as in an email footer ("Booking.com B.V., ... 1012 SJ").
+                && ![" b.v.", " bv,", " bv ", " n.v.", " ltd", " gmbh", " inc.", "kvk", "chamber of commerce", "registered office", "statutaire zetel"]
+                    .iter()
+                    .any(|w| near.contains(w))
         }
         Kind::IdNumber => id_valid(m, before, after),
         Kind::Passport => {

@@ -1462,3 +1462,4 @@ strong, b, th, dt { font-weight: 600; }
 .update-notes-fold { margin-top: 0.35rem; }
 .update-notes-fold summary { cursor: pointer; color: var(--ink-2, #525a63); }
 .update-notes-fold .update-notes { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+.find-hint { margin-top: 0.35rem; }

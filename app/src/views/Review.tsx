@@ -254,8 +254,17 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
         await api.showInFolder(f.id);
         setToast({ text: "Opened the folder with the file selected." });
       } else if (f.link) {
+        // Pages and emails don't show what Sompio found, so copy it: Ctrl+F and paste finds it there.
+        const full = await api.revealFinding(f.id).catch(() => null);
+        const value = (full ?? f).matched.trim();
+        if (value) await copyText(value).catch(() => {});
         await openUrl(f.link);
-        setToast({ text: "Opened in your browser. Delete it there, then mark it as deleted here." });
+        const find = navigator.platform.toLowerCase().includes("mac") ? "⌘F" : "Ctrl+F";
+        setToast({
+          text: value
+            ? `Opened in your browser, and "${value.length > 40 ? value.slice(0, 40) + "…" : value}" is copied: press ${find} there and paste to find it. Delete it there, then mark it as deleted here.`
+            : "Opened in your browser. Delete it there, then mark it as deleted here.",
+        });
       } else {
         setToast({ text: `There's no web link for this one. Open ${platformName[f.platform]} and find it by its date.` });
       }
@@ -687,6 +696,11 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                     </p>
                     {current.theirs && <p className="small theirs-note">{THEIRS_NOTE}</p>}
                     <p className="small muted advice-line"><strong>What to do: </strong>{current.advice}</p>
+                    {current.link && current.platform !== "pc" && (
+                      <p className="small muted find-hint">
+                        When you open it, Sompio copies what it found. Press {navigator.platform.toLowerCase().includes("mac") ? "⌘F" : "Ctrl+F"} on the page and paste to jump to it.
+                      </p>
+                    )}
                     {current.repeats > 1 && !sameAs && (
                       <div className="group-box">
                         <div>

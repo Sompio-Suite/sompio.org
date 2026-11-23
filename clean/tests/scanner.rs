@@ -124,3 +124,18 @@ fn finds_numbers_from_other_countries() {
     assert!(has("mieszkam na ul. Długa 7", Kind::Address));
     assert!(!has("send it via email 3 times", Kind::Address));
 }
+
+#[test]
+fn postcodes_in_dates_codes_and_company_footers_are_skipped() {
+    // Real ones still count.
+    assert!(has("I live at Prinsengracht 263, 1016 GV Amsterdam", Kind::Postcode));
+    assert!(has("postcode: 3811 AB", Kind::Postcode));
+    assert!(has("ons nieuwe adres is Dorpsstraat 4\n2011 VA Haarlem", Kind::Postcode));
+    // A booking: the year of a date followed by a code.
+    assert!(!has("Payment in selected currency 07/06/2018 MC 159082262 confirmed", Kind::Postcode));
+    assert!(!has("Payment ID Status Payment amount 28/02/2017 VI 49.98 EUR", Kind::Postcode));
+    assert!(!has("ref 2018 MC 159082262", Kind::Postcode));
+    // A company's own address in an email footer.
+    assert!(!has("Booking.com B.V. - Nieuwezijds Voorburgwal 162, 1012 SJ Amsterdam", Kind::Postcode));
+    assert!(!has("Example Ltd, registered office: Keizersgracht 1, 1015 CJ Amsterdam", Kind::Postcode));
+}
