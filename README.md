@@ -5,7 +5,7 @@
 <h1 align="center">Sompio</h1>
 
 <p align="center">
-  <a href="https://github.com/Sompio-Suite/sompio.org/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Sompio-Suite/sompio.org?label=release&color=2e7d32"></a>
+  <a href="https://github.com/sompiohq/sompio-app/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/sompiohq/sompio-app?label=release&color=2e7d32"></a>
   <img alt="Windows, Mac and Linux" src="https://img.shields.io/badge/platforms-Windows%20%7C%20Mac%20%7C%20Linux-525a63">
   <a href="LICENSE.md"><img alt="License: FSL-1.1-ALv2" src="https://img.shields.io/badge/license-FSL--1.1--ALv2-525a63"></a>
   <a href="https://ko-fi.com/sompio"><img alt="Donate on Ko-fi" src="https://img.shields.io/badge/donate-Ko--fi-e0483b"></a>
@@ -22,7 +22,7 @@ on your own computer: no account, no cloud, nothing uploaded.
 ## Get started
 
 1. Download Sompio from **[sompio.org](https://sompio.org)** or the
-   [latest release](https://github.com/Sompio-Suite/sompio.org/releases/latest). It runs on Windows, Mac and Linux.
+   [latest release](https://github.com/sompiohq/sompio-app/releases/latest). It runs on Windows, Mac and Linux.
 2. Open it and follow **Getting started**: learn what counts as personal information, find it, clean it up, and
    secure your accounts.
 3. Stuck or curious? The [Learn more](https://sompio.org/docs.php) page explains every part, with step-by-step guides.

@@ -19,7 +19,7 @@ import Security from "./views/Security";
 import Vault from "./views/Vault";
 import { DOCS_URL } from "./views/VaultTools";
 
-const SOURCE_URL = "https://github.com/Sompio-Suite/sompio.org";
+const SOURCE_URL = "https://github.com/sompiohq/sompio-app";
 import Samples from "./views/Samples";
 import ReportBug from "./views/ReportBug";
 import { BUY_URL, accessText, passEnding } from "./licence";
