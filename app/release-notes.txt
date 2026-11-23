@@ -1,0 +1,2 @@
+Sompio now uses the same typeface as sompio.org (Nunito Sans), with lighter headings. The font is part of the app, so nothing is loaded from the internet.
+Sample data for testing is under the gear menu at the top right.

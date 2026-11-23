@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420" role="img" aria-label="A laptop with a list of passwords, guarded by a shield and a padlock">
+  <defs>
+    <linearGradient id="v-green" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5cb85f"/><stop offset="1" stop-color="#2e7d32"/></linearGradient>
+    <linearGradient id="v-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c453"/><stop offset="1" stop-color="#e0a12e"/></linearGradient>
+    <filter id="v-soft" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1d3b26" flood-opacity="0.15"/></filter>
+  </defs>
+  <ellipse cx="290" cy="384" rx="230" ry="13" fill="#1d2125" opacity="0.07"/>
+  <!-- laptop -->
+  <rect x="130" y="50" width="340" height="236" rx="14" fill="#2b3640"/>
+  <rect x="143" y="63" width="314" height="210" rx="5" fill="#e7f1f8"/>
+  <rect x="156" y="76" width="288" height="184" rx="7" fill="#fff"/>
+  <rect x="156" y="76" width="70" height="184" rx="7" fill="#f3f5f7"/><rect x="219" y="76" width="7" height="184" fill="#f3f5f7"/>
+  <rect x="166" y="92" width="44" height="7" rx="3.5" fill="#bfe1c1"/><rect x="166" y="108" width="36" height="6" rx="3" fill="#d3d9de"/><rect x="166" y="122" width="40" height="6" rx="3" fill="#d3d9de"/><rect x="166" y="136" width="30" height="6" rx="3" fill="#d3d9de"/>
+  <g fill="#2b3640">
+    <rect x="240" y="92" width="64" height="7" rx="3.5"/><rect x="240" y="122" width="52" height="7" rx="3.5"/><rect x="240" y="152" width="70" height="7" rx="3.5"/><rect x="240" y="182" width="58" height="7" rx="3.5"/><rect x="240" y="212" width="66" height="7" rx="3.5"/>
+  </g>
+  <g fill="#9aa3ab">
+    <circle cx="350" cy="96" r="2.6"/><circle cx="359" cy="96" r="2.6"/><circle cx="368" cy="96" r="2.6"/><circle cx="377" cy="96" r="2.6"/><circle cx="386" cy="96" r="2.6"/>
+    <circle cx="350" cy="126" r="2.6"/><circle cx="359" cy="126" r="2.6"/><circle cx="368" cy="126" r="2.6"/><circle cx="377" cy="126" r="2.6"/><circle cx="386" cy="126" r="2.6"/>
+    <circle cx="350" cy="186" r="2.6"/><circle cx="359" cy="186" r="2.6"/><circle cx="368" cy="186" r="2.6"/><circle cx="377" cy="186" r="2.6"/><circle cx="386" cy="186" r="2.6"/>
+    <circle cx="350" cy="216" r="2.6"/><circle cx="359" cy="216" r="2.6"/><circle cx="368" cy="216" r="2.6"/><circle cx="377" cy="216" r="2.6"/><circle cx="386" cy="216" r="2.6"/>
+  </g>
+  <rect x="236" y="144" width="200" height="24" rx="5" fill="#fde3df"/><rect x="240" y="152" width="70" height="7" rx="3.5" fill="#2b3640"/><rect x="346" y="150" width="80" height="12" rx="6" fill="#e0483b"/><rect x="356" y="154" width="60" height="4" rx="2" fill="#fff"/>
+  <g stroke="#eef0f2"><line x1="236" y1="110" x2="436" y2="110"/><line x1="236" y1="140" x2="436" y2="140"/><line x1="236" y1="200" x2="436" y2="200"/><line x1="236" y1="230" x2="436" y2="230"/></g>
+  <path d="M90 286 H510 L528 308 Q530 318 518 318 H82 Q70 318 72 308 Z" fill="#e9edf3"/>
+  <path d="M72 308 Q70 318 82 318 H518 Q530 318 528 308 L530 316 Q530 328 516 328 H84 Q70 328 70 316 Z" fill="#4a535c"/>
+  <rect x="250" y="292" width="100" height="9" rx="4" fill="#cfd6df"/>
+  <!-- shield -->
+  <g filter="url(#v-soft)">
+    <path d="M466 120 l58 22 v44 c0 40 -26 70 -58 84 c-32 -14 -58 -44 -58 -84 v-44z" fill="#fff"/>
+    <path d="M466 134 l46 17 v35 c0 32 -20 56 -46 68 c-26 -12 -46 -36 -46 -68 v-35z" fill="url(#v-green)"/>
+    <path d="M446 190 l14 14 l28 -30" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- padlock -->
+  <g filter="url(#v-soft)">
+    <path d="M78 262 v-26 a30 30 0 0 1 60 0 v26" fill="none" stroke="#d7a33a" stroke-width="12"/>
+    <rect x="58" y="256" width="100" height="84" rx="12" fill="url(#v-gold)"/>
+    <circle cx="108" cy="290" r="10" fill="#3a2f1a"/><path d="M103 294 h10 l3 22 h-16z" fill="#3a2f1a"/>
+  </g>
+</svg>

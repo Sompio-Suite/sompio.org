@@ -1,0 +1,21 @@
+node_modules/
+dist/
+target/
+app/src-tauri/gen/
+*.db
+*.db-wal
+*.db-shm
+.env
+Sompio for Windows/
+*.secret
+
+# The beta site: the real password lives only on the server
+website/public_html/private/feedback/*
+!website/public_html/private/feedback/.keep
+website/public_html/private/releases/*
+!website/public_html/private/releases/.keep
+website/public_html/private/data/*
+!website/public_html/private/data/.keep
+app/src-tauri/binaries/
+
+Public keys/

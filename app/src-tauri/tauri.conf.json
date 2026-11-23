@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Sompio",
+  "version": "2.2.0",
+  "identifier": "app.sompio.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Sompio",
+        "width": 1240,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "category": "Utility",
+    "shortDescription": "Find what you've left online, and remove it yourself.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "publisher": "Sompio",
+    "createUpdaterArtifacts": false,
+    "resources": {
+      "../../extension/": "extension/"
+    }
+  }
+}

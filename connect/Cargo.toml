@@ -1,0 +1,22 @@
+[package]
+name = "sompio-connect"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+grammers-client = "0.11.0"
+grammers-session = { version = "0.11.0", default-features = false, features = ["serde"] }
+grammers-mtsender = "0.11.0"
+keyring = "4.2.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+sompio-clean = { version = "0.1.0", path = "../clean" }
+imap = "3.0.0-alpha.15"
+native-tls = "0.2.18"
+imap-proto = "0.16"
+
+# SQLite with built-in encryption (SQLite3 Multiple Ciphers), no OpenSSL needed.
+[patch.crates-io]
+libsqlite3-sys = { path = "../vendor/libsqlite3-sys" }

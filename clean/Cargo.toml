@@ -1,0 +1,26 @@
+[package]
+name = "sompio-clean"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aho-corasick = "1"
+anyhow = "1.0.104"
+csv = "1.4.0"
+# Reads the GPS position cameras and phones write into photos (only when asked)
+kamadak-exif = "0.6"
+mail-parser = "0.11.9"
+regex = "1.13.1"
+rusqlite = { version = "0.41.1", features = ["bundled"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+trash = "5.3.0"
+zip = { version = "9.4.1", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3.27.0"
+
+# SQLite with built-in encryption (SQLite3 Multiple Ciphers), no OpenSSL needed.
+[patch.crates-io]
+libsqlite3-sys = { path = "../vendor/libsqlite3-sys" }
