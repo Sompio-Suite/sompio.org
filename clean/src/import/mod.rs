@@ -371,9 +371,11 @@ pub(crate) fn detect(names: &[String]) -> Option<&'static str> {
 }
 
 pub use mbox::Mail as SentMail;
+pub use mbox::QUOTED_MARK;
 
 /// Reads one raw email (RFC 822) the way the mailbox importer does: recipients, subject and
-/// your own words, without quoted replies. Live email sync uses this so both give the same records.
+/// your own words, with any quoted or forwarded email kept after [`QUOTED_MARK`]. Live email sync uses
+/// this so both give the same records.
 pub fn parse_sent_mail(raw: &[u8]) -> Option<SentMail> {
     mbox::parse_mail(raw).map(|mut m| {
         m.id = m.id.trim_matches(['<', '>']).to_string();

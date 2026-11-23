@@ -856,6 +856,7 @@ pub fn run() {
             browser::browser_open_extension_folder,
             browser::browser_installed,
             browser::browser_open_extensions_page,
+            browser::browser_open_store,
             has_data,
             updates_on,
             update_token,

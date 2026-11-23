@@ -488,12 +488,16 @@ function BrowserSettings({ s, save, onDone }: { s: VaultSettings; save: (n: Vaul
       {s.browser && (
         <>
           <div className="browser-steps">
-            <p><strong>Add it to your browser</strong> <span className="muted small">(while Sompio is in testing, the extension isn't in the browser stores yet)</span></p>
+            <p><strong>Add it to your browser</strong></p>
             <ol className="small">
-              <li><strong>Chrome, Edge or Brave:</strong> open <code>chrome://extensions</code> (Edge: <code>edge://extensions</code>), turn on <em>Developer mode</em>, click <em>Load unpacked</em>, and choose the folder below.</li>
-              <li><strong>Firefox:</strong> open <code>about:debugging</code>, choose <em>This Firefox</em>, <em>Load Temporary Add-on</em>, and pick <code>manifest.json</code> in the folder below. Firefox removes it when it closes, until the extension is published.</li>
-              <li>Restart the browser, click the Sompio button in its toolbar, and choose <em>Connect to Sompio</em>. Sompio asks you to allow it, with a code to compare.</li>
+              <li>
+                Get <strong>Sompio Vault</strong> from your browser's store:{" "}
+                <button className="link" onClick={() => openExternal(CHROME_STORE)}>Chrome, Edge or Brave</button> ·{" "}
+                <button className="link" onClick={() => openExternal(STORE_PAGES.firefox)}>Firefox</button>
+              </li>
+              <li>Click the Sompio button in the browser's toolbar and choose <em>Connect to Sompio</em>. Sompio asks you to allow it, with a code to compare.</li>
             </ol>
+            <p className="small muted">Loading it by hand instead (developer mode): use this folder.</p>
             {folder && (
               <div className="inline-fields">
                 <code className="selectable folder-path">{folder}</code>
@@ -533,6 +537,12 @@ function BrowserSettings({ s, save, onDone }: { s: VaultSettings; save: (n: Vaul
 export const DOCS_URL = "https://sompio.org/docs.php";
 
 const BROWSER_NAMES: Record<string, string> = { chrome: "Chrome", edge: "Edge", brave: "Brave", firefox: "Firefox" };
+/** Sompio Vault in the browser stores (Edge installs it from the Chrome Web Store until its own listing is live). */
+const CHROME_STORE = "https://chromewebstore.google.com/detail/ibhofkgjkbhmmlmfcnehfknokeipmijp";
+const STORE_PAGES: Record<string, string> = {
+  chrome: CHROME_STORE, edge: CHROME_STORE, brave: CHROME_STORE,
+  firefox: "https://addons.mozilla.org/firefox/addon/sompio-vault/",
+};
 
 /** Step-by-step setup of the browser extension, for people who never open the documentation. */
 export function BrowserSetup({ onClose }: { onClose: (connected: boolean) => void }) {
@@ -568,15 +578,14 @@ export function BrowserSetup({ onClose }: { onClose: (connected: boolean) => voi
       setError(String(e));
     }
   };
-  const openBrowser = async (b: string) => {
+  // Opens the store page in the browser picked; if Sompio can't find that browser, in the default one.
+  const openStore = (b: string) => {
     setPicked(b);
     setError(null);
-    if (folder) await copyText(folder);
-    api.browserOpenExtensionsPage(b).catch((e) => setError(`${String(e)} Open ${BROWSER_NAMES[b]}'s extensions page yourself, as described below.`));
+    api.browserOpenStore(b).catch(() => openExternal(STORE_PAGES[b] ?? STORE_PAGES.chrome));
   };
   const on = !!settings?.browser;
   const connected = clients != null && before != null && clients.length > before;
-  const chromium = picked && picked !== "firefox";
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -607,38 +616,39 @@ export function BrowserSetup({ onClose }: { onClose: (connected: boolean) => voi
             <strong>Add it to your browser</strong>
             {on && (
               <>
-                <span className="small muted">Pick your browser. Sompio opens its extensions page and copies the extension's folder for you.</span>
+                <span className="small muted">Pick your browser. Sompio opens the Sompio Vault page in its store.</span>
                 <div className="browser-picks">
                   {installed.map((b) => (
-                    <button key={b} aria-pressed={picked === b} onClick={() => openBrowser(b)}>{BROWSER_NAMES[b]}</button>
+                    <button key={b} aria-pressed={picked === b} onClick={() => openStore(b)}>{BROWSER_NAMES[b]}</button>
                   ))}
                 </div>
                 {picked && (
                   <ol className="small sub-steps">
-                    {chromium ? (
-                      <>
-                        <li>On the page that opened, turn on <strong>Developer mode</strong> ({picked === "edge" ? "on the left" : "top right"}).</li>
-                        <li>Click <strong>Load unpacked</strong>.</li>
-                        <li>In the folder window, click the address bar at the top, press <strong>Ctrl+V</strong> and <strong>Enter</strong>, then click <strong>Select Folder</strong>.</li>
-                        <li>Pin it: click the puzzle piece in the toolbar, then the pin next to <strong>Sompio Vault</strong>.</li>
-                      </>
+                    {picked === "firefox" ? (
+                      <li>Click <strong>Add to Firefox</strong>, then <strong>Add</strong>.</li>
                     ) : (
                       <>
-                        <li>On the page that opened, click <strong>Load Temporary Add-on…</strong></li>
-                        <li>Click the address bar at the top of the file window, press <strong>Ctrl+V</strong> and <strong>Enter</strong>, then open <strong>manifest.json</strong>.</li>
-                        <li>Firefox removes it when it closes, until the extension is published. Repeat these steps after a restart.</li>
+                        {picked === "edge" && <li>If Edge shows a bar at the top, click <strong>Allow extensions from other stores</strong>, then <strong>Allow</strong>.</li>}
+                        <li>Click <strong>Add to {picked === "edge" ? "Chrome" : BROWSER_NAMES[picked]}</strong>, then <strong>Add extension</strong>.</li>
+                        <li>Pin it: click the puzzle piece in the toolbar, then the pin next to <strong>Sompio Vault</strong>.</li>
                       </>
                     )}
                   </ol>
                 )}
-                {folder && (
-                  <div className="inline-fields small">
-                    <span className="muted">Folder:</span>
-                    <code className="selectable folder-path">{folder}</code>
-                    <button className="small-btn" onClick={() => copyText(folder)}><Icon name="copy" size={14} />Copy</button>
-                    <button className="small-btn" onClick={() => api.browserOpenExtensionFolder().catch((e) => setError(String(e)))}><Icon name="folder" size={14} />Show</button>
-                  </div>
-                )}
+                <details className="small by-hand">
+                  <summary>Can't use the store? Load it by hand</summary>
+                  <ol className="sub-steps">
+                    <li><strong>Chrome, Edge or Brave:</strong> open the browser's extensions page (<code>chrome://extensions</code>, <code>edge://extensions</code>), turn on <strong>Developer mode</strong>, click <strong>Load unpacked</strong> and choose the folder below.</li>
+                    <li><strong>Firefox:</strong> open <code>about:debugging</code>, choose <strong>This Firefox</strong>, then <strong>Load Temporary Add-on</strong>, and open <strong>manifest.json</strong> in the folder below. Firefox removes it again when it closes.</li>
+                  </ol>
+                  {folder && (
+                    <div className="inline-fields">
+                      <code className="selectable folder-path">{folder}</code>
+                      <button className="small-btn" onClick={() => copyText(folder)}><Icon name="copy" size={14} />Copy</button>
+                      <button className="small-btn" onClick={() => api.browserOpenExtensionFolder().catch((e) => setError(String(e)))}><Icon name="folder" size={14} />Show</button>
+                    </div>
+                  )}
+                </details>
               </>
             )}
           </li>

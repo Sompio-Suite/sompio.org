@@ -201,6 +201,7 @@ export const vaultHandlers: Record<string, (a: any) => unknown> = {
   browser_open_extension_folder: () => undefined,
   browser_installed: () => ["chrome", "edge", "firefox"],
   browser_open_extensions_page: () => undefined,
+  browser_open_store: () => undefined,
   vault_autotype_matches: () => ({ window: "Zoom - Sign In", matches: [{ entry: summary(items[0]), sequence: "{PASSWORD}{ENTER}", because: "window rule" }, { entry: summary(items[1]), sequence: "{USERNAME}{TAB}{PASSWORD}{ENTER}", because: "title" }] }),
   vault_autotype_choose: () => undefined,
   vault_autotype_now: () => undefined,

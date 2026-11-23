@@ -1,1 +1,1 @@
-Sompio has a new home on GitHub: github.com/sompiohq/sompio-app. The GitHub button in Sompio now opens it.
+The browser extension now comes from your browser's store: in Vault, click Set it up, pick your browser and click Add. No developer mode anymore. In email, what someone else wrote (the email you replied to or forwarded) and who you sent it to now show in blue, after your own findings, and no longer count toward your score.

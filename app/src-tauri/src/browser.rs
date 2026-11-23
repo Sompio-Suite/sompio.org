@@ -25,8 +25,13 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 pub use sompio_browser_host::{is_host_launch, pipe_name, run as run_host, FIREFOX_ID, HOST_NAME, MAX_FRAME};
-/// Chrome, Edge, Brave and other Chromium browsers: fixed by the "key" in the extension's manifest
-pub const CHROME_ID: &str = "phmimpfbhcneblnnojaialplfglbkoke";
+/// Chromium extension IDs Sompio answers: the Chrome Web Store listing (also what Brave, and Edge with
+/// "allow extensions from other stores", install), then the copy loaded by hand, whose ID is fixed by
+/// the "key" in extension/manifest.json. Edge Add-ons gives its listing an ID of its own: add it here.
+pub const CHROME_IDS: [&str; 2] = [
+    "ibhofkgjkbhmmlmfcnehfknokeipmijp", // Chrome Web Store
+    "phmimpfbhcneblnnojaialplfglbkoke", // loaded by hand (developer mode)
+];
 /// A request older (or newer) than this is refused, so a captured one can't be sent again later
 const MAX_SKEW_MS: i64 = 120_000;
 
@@ -368,7 +373,26 @@ pub fn browser_installed() -> Vec<String> {
     BROWSERS.iter().filter(|(_, exe, _)| browser_exe(exe).is_some()).map(|(k, _, _)| k.to_string()).collect()
 }
 
-/// Opens a browser on its extensions page, where the Sompio extension is added.
+/// The Sompio Vault page in each browser's store. Edge uses the Chrome Web Store until its own
+/// listing is live (Edge offers "Allow extensions from other stores" there).
+const STORE_PAGES: &[(&str, &str)] = &[
+    ("chrome", "https://chromewebstore.google.com/detail/ibhofkgjkbhmmlmfcnehfknokeipmijp"),
+    ("edge", "https://chromewebstore.google.com/detail/ibhofkgjkbhmmlmfcnehfknokeipmijp"),
+    ("brave", "https://chromewebstore.google.com/detail/ibhofkgjkbhmmlmfcnehfknokeipmijp"),
+    ("firefox", "https://addons.mozilla.org/firefox/addon/sompio-vault/"),
+];
+
+/// Opens the Sompio Vault store page in the chosen browser. Fails if that browser can't be found,
+/// so the app can open the page in the default browser instead.
+#[tauri::command]
+pub fn browser_open_store(browser: String) -> CmdResult<()> {
+    let (_, url) = STORE_PAGES.iter().find(|(k, _)| *k == browser).ok_or("Unknown browser.")?;
+    let (_, exe, _) = BROWSERS.iter().find(|(k, _, _)| *k == browser).ok_or("Unknown browser.")?;
+    let path = browser_exe(exe).ok_or("That browser doesn't seem to be installed.")?;
+    std::process::Command::new(path).arg(url).spawn().map(|_| ()).map_err(|e| format!("Couldn't open the browser: {e}"))
+}
+
+/// Opens a browser on its extensions page, where the Sompio extension can be loaded by hand.
 #[tauri::command]
 pub fn browser_open_extensions_page(browser: String) -> CmdResult<()> {
     let (_, exe, page) = BROWSERS.iter().find(|(k, _, _)| *k == browser).ok_or("Unknown browser.")?;
@@ -469,7 +493,7 @@ fn manifest(path: &str, firefox: bool) -> Value {
     if firefox {
         m["allowed_extensions"] = json!([FIREFOX_ID]);
     } else {
-        m["allowed_origins"] = json!([format!("chrome-extension://{CHROME_ID}/")]);
+        m["allowed_origins"] = json!(CHROME_IDS.iter().map(|id| format!("chrome-extension://{id}/")).collect::<Vec<_>>());
     }
     m
 }

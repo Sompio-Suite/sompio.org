@@ -68,11 +68,15 @@ export interface Stats {
 }
 export interface ImportSummary { platform: Platform; channels: number; messages: number; servers: number; warnings: string[] }
 export interface ImportProgress { phase: string; done: number; total: number }
-export interface KindCount { kind: KindKey; label: string; severity: number; advice: string; count: number; open: number }
+export interface KindCount { kind: KindKey; label: string; severity: number; advice: string; count: number; open: number;
+  /** Still to review, leaving out findings in someone else's words: what the score counts */
+  mine_open: number }
 export interface ScanSummary {
   scanned: number; flagged_messages: number; total_findings: number;
   open: number; later: number; done: number; ignored_rules: number;
   scanned_at_ms: number | null; by_kind: KindCount[];
+  /** Findings in someone else's words (a quoted email, a recipient's address) */
+  theirs: number;
 }
 export interface FindingView {
   id: number; message_id: string; channel_id: string; channel_name: string; platform: Platform; ts: number;
@@ -81,6 +85,8 @@ export interface FindingView {
   status: Status | null; link: string | null; file_path: string | null;
   /** How many findings in this list have the same value */
   repeats: number;
+  /** In someone else's words: an email you quoted or forwarded, or a recipient's address */
+  theirs: boolean;
 }
 
 export interface GroupInfo {
@@ -347,6 +353,7 @@ export const api = {
   browserOpenExtensionFolder: () => call<void>("browser_open_extension_folder"),
   browserInstalled: () => call<string[]>("browser_installed"),
   browserOpenExtensionsPage: (browser: string) => call<void>("browser_open_extensions_page", { browser }),
+  browserOpenStore: (browser: string) => call<void>("browser_open_store", { browser }),
   vaultSetSettings: (settings: VaultSettings) => call<void>("vault_set_settings", { settings }),
   vaultAutotypeMatches: () => call<{ window: string; matches: AutoTypeMatch[] }>("vault_autotype_matches"),
   vaultAutotypeChoose: (id: string, sequence: string | null) => call<void>("vault_autotype_choose", { id, sequence }),

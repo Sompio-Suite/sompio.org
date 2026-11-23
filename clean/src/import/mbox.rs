@@ -3,7 +3,9 @@
 //! Only mail you sent is imported: Gmail marks it with an "X-Gmail-Labels: …Sent…" header,
 //! and a file whose name says "sent" is taken as sent mail. The mailbox is streamed, never
 //! loaded whole, because Takeout files can be many gigabytes.
-//! Quoted replies (lines starting with ">", "On … wrote:") are cut off: that's someone else's text.
+//! Quoted replies and forwards (lines starting with ">", "On … wrote:", "Op … schreef:", an Outlook
+//! "From:/Sent:" block, "Forwarded message") are someone else's words. They're kept after
+//! [`QUOTED_MARK`] so Trace can show what they contain apart from what you wrote yourself.
 
 use super::{file_name_lower, ImportProgress, ImportSummary, Source, Writer};
 use anyhow::Result;
@@ -18,6 +20,78 @@ pub struct Mail {
     pub text: String,
 }
 
+/// Separates your own words from the quoted or forwarded email under them. Everything after
+/// this line in a stored email was written by someone else.
+pub const QUOTED_MARK: &str = "\n\n\u{2014}\u{2014} Earlier email, written by someone else \u{2014}\u{2014}\n";
+
+/// The most of a quoted email that's kept, so long threads don't fill the database.
+const MAX_QUOTED: usize = 20_000;
+
+/// The verb in the "On <date>, <name> wrote:" line, in the languages mail apps use most. Some put
+/// the name after it ("Op … schreef Anna <anna@…>:").
+const WROTE: [&str; 11] = [
+    " wrote", " schreef", " schrieb", " a écrit", " escribió", " ha scritto", " escreveu", " skrev", " kirjoitti",
+    " napisał", " a scris",
+];
+
+/// Lines that start a forwarded email, or Outlook's header block above a reply.
+const FORWARD: [&str; 8] = [
+    "-----original message", "---------- forwarded message", "-------- forwarded message", "begin forwarded message",
+    "-------- doorgestuurd bericht", "---------- doorgestuurd bericht", "-----oorspronkelijk bericht", "-------- weitergeleitete nachricht",
+];
+
+/// Whether `t` (trimmed) starts the email being replied to or forwarded. `next` is the line after it,
+/// for Outlook's "From: … / Sent: …" block.
+fn starts_quote(t: &str, next: Option<&str>) -> bool {
+    let l = t.to_lowercase();
+    // The date or the address in it keeps "Here's what my teacher wrote:" from counting.
+    if l.ends_with(':') && WROTE.iter().any(|w| l.contains(w)) && t.chars().count() < 300 && t.chars().any(|c| c.is_ascii_digit() || c == '@') {
+        return true;
+    }
+    if t == "________________________________" || FORWARD.iter().any(|f| l.starts_with(f)) {
+        return true;
+    }
+    let header = |s: &str, names: &[&str]| {
+        let s = s.trim().to_lowercase();
+        names.iter().any(|n| s.starts_with(n))
+    };
+    header(t, &["from:", "van:", "von:", "de :", "de:"])
+        && next.is_some_and(|n| header(n, &["sent:", "verzonden:", "gesendet:", "envoyé :", "envoyé:", "date:", "datum:", "to:", "aan:"]))
+}
+
+/// Splits a plain-text body into your own words and the quoted or forwarded part under them.
+pub(crate) fn split_quoted(body: &str) -> (String, String) {
+    let lines: Vec<&str> = body.lines().collect();
+    let mut own = Vec::new();
+    let mut quoted = Vec::new();
+    let mut i = 0;
+    while i < lines.len() {
+        let t = lines[i].trim();
+        // Gmail wraps long "On …, Name <address>" lines, putting "wrote:" on the next line.
+        let wrapped = (t.starts_with("On ") || t.starts_with("Op ") || t.starts_with("Am ") || t.starts_with("Le "))
+            && lines.get(i + 1).is_some_and(|n| starts_quote(n.trim(), None) && !n.trim().starts_with('-'));
+        if wrapped || starts_quote(t, lines.get(i + 1).copied()) {
+            quoted.extend(lines[i..].iter().map(|l| l.trim_start_matches('>').trim_start()));
+            break;
+        }
+        if let Some(q) = t.strip_prefix('>') {
+            quoted.push(q.trim_start());
+        } else {
+            own.push(lines[i]);
+        }
+        i += 1;
+    }
+    let mut quoted = quoted.join("\n").trim().to_string();
+    if quoted.len() > MAX_QUOTED {
+        let mut cut = MAX_QUOTED;
+        while !quoted.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        quoted.truncate(cut);
+    }
+    (own.join("\n").trim().to_string(), quoted)
+}
+
 /// Turns raw email bytes into the text Sompio scans: recipients, subject, and your own words.
 pub(crate) fn parse_mail(raw: &[u8]) -> Option<Mail> {
     let msg = MessageParser::default().parse(raw)?;
@@ -27,18 +101,7 @@ pub(crate) fn parse_mail(raw: &[u8]) -> Option<Mail> {
         .unwrap_or_default();
     let subject = msg.subject().unwrap_or("").to_string();
     let body = msg.body_text(0).map(|b| b.to_string()).unwrap_or_default();
-    let mut own = Vec::new();
-    for line in body.lines() {
-        let t = line.trim();
-        if t.starts_with('>') {
-            continue;
-        }
-        if (t.starts_with("On ") && t.ends_with("wrote:")) || t.starts_with("-----Original Message") || t == "________________________________" {
-            break; // the rest is the message being replied to
-        }
-        own.push(line);
-    }
-    let body = own.join("\n").trim().to_string();
+    let (own, quoted) = split_quoted(&body);
     let mut text = String::new();
     if !to.is_empty() {
         text.push_str(&format!("To: {}\n", to.join(", ")));
@@ -47,13 +110,17 @@ pub(crate) fn parse_mail(raw: &[u8]) -> Option<Mail> {
         text.push_str(&format!("Subject: {subject}\n"));
     }
     text.push('\n');
-    text.push_str(&body);
+    text.push_str(&own);
     if text.len() > 100_000 {
         let mut cut = 100_000;
         while !text.is_char_boundary(cut) {
             cut -= 1;
         }
         text.truncate(cut);
+    }
+    if !quoted.is_empty() {
+        text.push_str(QUOTED_MARK);
+        text.push_str(&quoted);
     }
     let ts = msg.date().map(|d| d.to_timestamp() * 1000).unwrap_or(0);
     let id = msg.message_id().map(str::to_string).unwrap_or_else(|| format!("{ts}-{}", subject.len()));
@@ -154,8 +221,29 @@ mod tests {
         let m = parse_mail(&got[0].1).unwrap();
         assert!(m.text.contains("To: bank@example.org") && m.text.contains("NL91"));
         assert!(m.text.contains("From the archives"), "unescaped mboxrd line");
-        assert!(!m.text.contains("their private stuff"));
+        let (own, quoted) = m.text.split_once(QUOTED_MARK).unwrap();
+        assert!(own.contains("NL91") && !own.contains("their private stuff"));
+        assert!(quoted.contains("their private stuff") && !quoted.contains("> "));
         assert_eq!(m.id, "a@b");
         assert_eq!(m.ts, 1_704_103_200_000);
+    }
+
+    #[test]
+    fn finds_quotes_in_other_languages_and_outlook() {
+        let cases = [
+            "Thanks!\n\nOp ma 1 jan. 2024 om 10:00 schreef Anna <anna@example.org>:\nMijn BSN is 111222333",
+            "Thanks!\n\nOn Mon, 1 Jan 2024 at 10:00, Anna Example\n<anna@example.org> wrote:\nsecret",
+            "Thanks!\n\nFrom: Anna Example <anna@example.org>\nSent: Monday, 1 January 2024 10:00\nTo: me\nsecret",
+            "Thanks!\n\n---------- Forwarded message ---------\nFrom: Anna\nsecret",
+            "Thanks!\n\nAm Mo., 1. Jan. 2024 um 10:00 Uhr schrieb Anna <anna@example.org>:\nsecret",
+        ];
+        for c in cases {
+            let (own, quoted) = split_quoted(c);
+            assert_eq!(own, "Thanks!", "{c}");
+            assert!(!quoted.is_empty(), "{c}");
+        }
+        // A sentence that merely mentions sending something isn't a quote.
+        let (own, quoted) = split_quoted("From: the shop\nI ordered it yesterday.\nHere's what my teacher wrote:\nwell done");
+        assert!(quoted.is_empty() && own.contains("the shop") && own.contains("well done"));
     }
 }

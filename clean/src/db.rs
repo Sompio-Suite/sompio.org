@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS findings (
     severity    INTEGER NOT NULL,
     start_byte  INTEGER NOT NULL,
     end_byte    INTEGER NOT NULL,
-    fp          TEXT NOT NULL DEFAULT ''  -- SHA-256 of the normalised value, to group repeats of the same value
+    fp          TEXT NOT NULL DEFAULT '', -- SHA-256 of the normalised value, to group repeats of the same value
+    theirs      INTEGER NOT NULL DEFAULT 0 -- 1 when it's in someone else's words (a quoted email, a recipient)
 );
 CREATE INDEX IF NOT EXISTS findings_kind ON findings(kind, message_id);
 CREATE INDEX IF NOT EXISTS findings_message ON findings(message_id);
@@ -176,6 +177,12 @@ impl Store {
             // Added after the first release: fill it in for findings from earlier scans.
             store.conn.execute_batch("ALTER TABLE findings ADD COLUMN fp TEXT NOT NULL DEFAULT ''")?;
             store.backfill_fingerprints()?;
+        }
+        let has_theirs: bool =
+            store.conn.query_row("SELECT COUNT(*) > 0 FROM pragma_table_info('findings') WHERE name = 'theirs'", [], |r| r.get(0))?;
+        if !has_theirs {
+            // Added in 2.3: older findings count as your own until the next scan sorts them.
+            store.conn.execute_batch("ALTER TABLE findings ADD COLUMN theirs INTEGER NOT NULL DEFAULT 0")?;
         }
         store.conn.execute_batch("CREATE INDEX IF NOT EXISTS findings_fp ON findings(kind, fp)")?;
         Ok(store)

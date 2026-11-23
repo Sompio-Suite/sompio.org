@@ -61,7 +61,7 @@ function Ring({ value, size, label, color }: { value: number; size: number; labe
 export default function Overview({ licence, scan, traced, health, inChats, trace, onGo, onReview }: Props) {
   const [how, setHow] = useState(false);
 
-  const open = (sev: number) => (traced && scan ? scan.by_kind.filter((k) => k.severity === sev).reduce((a, k) => a + k.open, 0) : 0);
+  const open = (sev: number) => (traced && scan ? scan.by_kind.filter((k) => k.severity === sev).reduce((a, k) => a + k.mine_open, 0) : 0);
   const weakOrReused = health?.items.filter((i) => i.issues.some((x) => x.kind === "weak" || x.kind === "reused")).length ?? 0;
   const oldPw = health?.items.filter((i) => i.issues.some((x) => x.kind === "old")).length ?? 0;
   const requests = trace?.requests ?? [];

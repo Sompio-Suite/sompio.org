@@ -78,7 +78,7 @@ async function render() {
       h("ol", { class: "steps" },
         h("li", {}, "Open Sompio and unlock it."),
         h("li", {}, "Go to Vault, Settings, and turn on ", h("b", {}, "Browser extension"), "."),
-        h("li", {}, "Restart this browser, then click this button again.")),
+        h("li", {}, "Click this button again. If it still says this, restart the browser.")),
     );
   }
   if (!s.running) {

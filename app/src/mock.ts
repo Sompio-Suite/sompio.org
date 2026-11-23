@@ -132,6 +132,16 @@ function scan() {
 /** Same value, for grouping (the real app uses a hash of the normalised value). */
 const valueKey = (f: Finding) => f.kind + "|" + f.msg.content.slice(f.start, f.end).toLowerCase().replace(/[^\p{L}\d@.]/gu, "");
 
+/** Same rule as the app: in sent email, the "To:" line and the quoted email under your words. */
+const QUOTED_MARK = "\n\n\u2014\u2014 Earlier email, written by someone else \u2014\u2014\n";
+const isTheirs = (f: Finding) => {
+  if (f.msg.platform !== "email") return false;
+  const c = f.msg.content;
+  if (c.startsWith("To: ") && f.start < (c.indexOf("\n") < 0 ? c.length : c.indexOf("\n"))) return true;
+  const q = c.indexOf(QUOTED_MARK);
+  return q >= 0 && f.start >= q;
+};
+
 function view(f: Finding, reveal: boolean, repeats = 1): FindingView {
   const [label, severity, advice] = KINDS[f.kind];
   const c = f.msg.content;
@@ -140,6 +150,7 @@ function view(f: Finding, reveal: boolean, repeats = 1): FindingView {
     id: f.id, message_id: f.msg.id, channel_id: f.msg.channel_id, channel_name: f.msg.channel_name, platform: f.msg.platform, ts: f.msg.ts,
     kind: f.kind, label, severity, advice, before: c.slice(0, f.start), matched: reveal ? v : mask(v), after: c.slice(f.end),
     masked: !reveal, status: statuses.get(f.id) ?? null, link: url(f.msg), file_path: f.msg.file_path ?? null, repeats,
+    theirs: isTheirs(f),
   };
 }
 
@@ -169,9 +180,10 @@ function summary(): ScanSummary {
     done: findings.filter((f) => st(f) === "deleted" || st(f) === "ok").length,
     ignored_rules: ignored.size,
     scanned_at_ms: scanned ? Date.now() : null,
+    theirs: findings.filter(isTheirs).length,
     by_kind: (Object.keys(KINDS) as KindKey[]).map((k) => {
       const fs = findings.filter((f) => f.kind === k);
-      return { kind: k, label: KINDS[k][0], severity: KINDS[k][1], advice: KINDS[k][2], count: fs.length, open: fs.filter((f) => !st(f) || st(f) === "later").length };
+      return { kind: k, label: KINDS[k][0], severity: KINDS[k][1], advice: KINDS[k][2], count: fs.length, open: fs.filter((f) => !st(f) || st(f) === "later").length, mine_open: fs.filter((f) => (!st(f) || st(f) === "later") && !isTheirs(f)).length };
     }),
   };
 }
@@ -256,6 +268,12 @@ const handlers: Record<string, (a: any) => unknown> = {
   email_disconnect: () => { mail = { connected: false, address: null, provider: null }; },
   email_sync: async () => {
     for (let i = 0; i <= 1840; i += 100) { emit("email-progress", { done: Math.min(i, 1840), total: 1840 }); await wait(60); }
+    messages = messages.filter((m) => m.platform !== "email");
+    const mailMsg = (id: string, ts: number, content: string): Msg => ({ id, channel_id: "sent", channel_name: "Sent mail", platform: "email", guild: null, ts, content, attachments: [] });
+    messages.push(
+      mailMsg("m1@mail.example", Date.UTC(2024, 0, 8), "To: landlord@example.org\nSubject: Rent\n\nHi, my IBAN is NL91 ABNA 0417 1643 00 for the deposit."),
+      mailMsg("m2@mail.example", Date.UTC(2024, 2, 3), `To: noor.bakker@example.org\nSubject: Re: weekend\n\nSounds good, see you Saturday!${QUOTED_MARK}Op za 2 mrt. 2024 om 18:10 schreef Noor <noor.bakker@example.org>:\nNew number, text me on 06-12345678`),
+    );
     sources = [...sources.filter((x) => x.platform !== "email"), { platform: "email", label: "Email", origin: "Connected email account", imported_at: Date.now(), channels: 1, messages: 1840 }];
     return { platform: "email", channels: 1, messages: 1840, servers: 0, warnings: [] };
   },
@@ -418,14 +436,14 @@ const handlers: Record<string, (a: any) => unknown> = {
     const same = sameAs ? findings.find((f) => f.id === sameAs) : null;
     const all = findings.filter((f) => (!kind || f.kind === kind) && (!platform || f.msg.platform === platform) && matchesTab(f, status)
       && (!same || valueKey(f) === valueKey(same)))
-      .sort((a, b) => KINDS[b.kind][1] - KINDS[a.kind][1] || b.msg.ts - a.msg.ts);
+      .sort((a, b) => +isTheirs(a) - +isTheirs(b) || KINDS[b.kind][1] - KINDS[a.kind][1] || b.msg.ts - a.msg.ts);
     const counts = new Map<string, number>();
     all.forEach((f) => counts.set(valueKey(f), (counts.get(valueKey(f)) ?? 0) + 1));
     let list = all;
     if (group) {
       const seen = new Set<string>();
       list = all.filter((f) => !seen.has(valueKey(f)) && !!seen.add(valueKey(f)))
-        .sort((a, b) => KINDS[b.kind][1] - KINDS[a.kind][1] || counts.get(valueKey(b))! - counts.get(valueKey(a))! || b.msg.ts - a.msg.ts);
+        .sort((a, b) => +isTheirs(a) - +isTheirs(b) || KINDS[b.kind][1] - KINDS[a.kind][1] || counts.get(valueKey(b))! - counts.get(valueKey(a))! || b.msg.ts - a.msg.ts);
     }
     const p = page(list, offset, limit);
     return { ...p, items: p.items.map((f) => view(f, reveal, counts.get(valueKey(f)))) };

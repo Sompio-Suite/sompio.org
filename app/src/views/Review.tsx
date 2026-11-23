@@ -628,7 +628,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                           id={`f-${t.id}`}
                           role="option"
                           aria-selected={row.index === focus}
-                          className={`xc-row${row.index === focus ? " active" : ""}${selected.has(t.id) ? " picked" : ""}${t.status ? " decided" : ""}`}
+                          className={`xc-row${row.index === focus ? " active" : ""}${selected.has(t.id) ? " picked" : ""}${t.status ? " decided" : ""}${t.theirs ? " theirs" : ""}`}
                           onClick={(e) => {
                             if (e.shiftKey || e.ctrlKey || e.metaKey) toggleSelect(t, row.index, e.shiftKey);
                             setFocus(row.index);
@@ -639,7 +639,9 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                             <input type="checkbox" aria-label="Select" checked={selected.has(t.id)} onClick={(e) => e.stopPropagation()}
                               onChange={(e) => toggleSelect(t, row.index, (e.nativeEvent as MouseEvent).shiftKey)} />
                           </span>
-                          <span className="c-type"><span className={`sev sev-${t.severity}`} aria-label={severityLabel(t.severity)} />{t.label}</span>
+                          <span className="c-type" title={t.theirs ? THEIRS_TITLE : undefined}>
+                            <span className={t.theirs ? "sev sev-theirs" : `sev sev-${t.severity}`} aria-label={t.theirs ? "Someone else's" : severityLabel(t.severity)} />{t.label}
+                          </span>
                           <span className="c-found">
                             {t.masked ? <span className="redact">{t.matched}</span> : <strong>{t.matched}</strong>}
                           </span>
@@ -663,6 +665,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                 <div className="xc-preview-head">
                   <span className={`risk risk-${current.severity}`}>{severityLabel(current.severity)}</span>
                   <h2>{current.label}</h2>
+                  {current.theirs && <TheirsChip />}
                   <span className="tag">{platformName[current.platform]}</span>
                   <span className="small muted">{current.channel_name}, {dateTime(current.ts)}</span>
                   {current.status && (
@@ -682,6 +685,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                       </button>
                       {current.after}
                     </p>
+                    {current.theirs && <p className="small theirs-note">{THEIRS_NOTE}</p>}
                     <p className="small muted advice-line"><strong>What to do: </strong>{current.advice}</p>
                     {current.repeats > 1 && !sameAs && (
                       <div className="group-box">
@@ -812,6 +816,16 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
   );
 }
 
+/** Marks a finding in someone else's words: an email you quoted or forwarded, or a recipient's address. */
+const THEIRS_TITLE = "In an email you replied to or forwarded, or a recipient's address: written by or about someone else";
+const TheirsChip = () => (
+  <span className="theirs-chip" title={THEIRS_TITLE}>
+    Someone else's
+  </span>
+);
+const THEIRS_NOTE =
+  "This is in the email you replied to or forwarded, or it's who you sent it to. Someone else wrote it, or it's about them, so it matters less for you. Deleting your sent email removes your copy; they still have theirs.";
+
 const pickText = (f: FindingView) => ({ before: f.before, matched: f.matched, after: f.after, masked: false });
 
 const yearSpan = (a: number, b: number) => {
@@ -934,10 +948,12 @@ function GuidePanel(p: {
               <div className="guide-meta">
                 <span className={`risk risk-${f.severity}`}>{severityLabel(f.severity)}</span>
                 <strong>{f.label}</strong>
+                {f.theirs && <TheirsChip />}
                 <span className="tag">{platformName[f.platform]}</span>
                 <span className="small muted">{f.channel_name}, {dateTime(f.ts)}</span>
               </div>
               <p className="quote">{f.before}<mark>{f.masked && !p.revealAll ? "•••" : f.matched}</mark>{f.after}</p>
+              {f.theirs && <p className="small theirs-note">{THEIRS_NOTE}</p>}
               {f.advice && <p className="small"><strong>What to do:</strong> {f.advice}</p>}
             </div>
             {g.error && <p className="error small" role="alert">{g.error}</p>}

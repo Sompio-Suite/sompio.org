@@ -38,7 +38,23 @@
     .banner .x { margin-left: auto; border: 0; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: #5b6774; }
     .muted { color: #5b6774; }
   `;
-  const LOGO = `<svg viewBox="0 0 120 120" aria-hidden="true"><rect width="120" height="120" rx="26" fill="#1f2d3a"/><path d="M22 58 A30 30 0 0 1 82 58 Z" fill="#fff"/><path d="M38 64 A30 30 0 0 0 98 64 Z" fill="#4caf50"/></svg>`;
+  // The Sompio mark, built node by node (no HTML strings anywhere in pages).
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const logo = () => {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 120 120");
+    svg.setAttribute("aria-hidden", "true");
+    for (const [tag, attrs] of [
+      ["rect", { width: "120", height: "120", rx: "26", fill: "#1f2d3a" }],
+      ["path", { d: "M22 58 A30 30 0 0 1 82 58 Z", fill: "#fff" }],
+      ["path", { d: "M38 64 A30 30 0 0 0 98 64 Z", fill: "#4caf50" }],
+    ]) {
+      const n = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      svg.appendChild(n);
+    }
+    return svg;
+  };
 
   const hostEl = document.createElement("sompio-vault");
   const root = hostEl.attachShadow({ mode: "closed" });
@@ -47,10 +63,10 @@
   root.appendChild(style);
   const attach = () => !hostEl.isConnected && document.documentElement.appendChild(hostEl);
 
-  const el = (tag, cls, html) => {
+  const el = (tag, cls, ...kids) => {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
-    if (html != null) e.innerHTML = html;
+    e.append(...kids);
     return e;
   };
   const text = (tag, cls, t) => {
@@ -122,7 +138,7 @@
   function decorate(input, kind) {
     if (buttons.has(input)) return;
     attach();
-    const b = el("button", "btn", LOGO);
+    const b = el("button", "btn", logo());
     b.type = "button";
     b.title = "Sompio Vault";
     b.tabIndex = -1;
@@ -219,7 +235,7 @@
     menuFor = input;
     menu = el("div", "menu");
     menu.setAttribute("role", "listbox");
-    const head = el("div", "head", `${LOGO}<span>Sompio Vault</span>`);
+    const head = el("div", "head", logo(), text("span", null, "Sompio Vault"));
     menu.appendChild(head);
     const loading = text("div", "note", "Loading…");
     menu.appendChild(loading);
@@ -247,7 +263,7 @@
       return;
     }
     if (kind === "new") {
-      const g = el("button", "item gen", `<span class="avatar">✱</span><span class="text"><b>Use a strong password</b><span>Made by Sompio</span></span>`);
+      const g = el("button", "item gen", text("span", "avatar", "✱"), el("span", "text", text("b", null, "Use a strong password"), text("span", null, "Made by Sompio")));
       g.addEventListener("click", async () => {
         const r = await ask({ type: "generate" });
         if (!r?.ok) return;
@@ -346,7 +362,7 @@
     attach();
     const b = el("div", "banner");
     b.setAttribute("role", "dialog");
-    const title = el("div", "title", LOGO);
+    const title = el("div", "title", logo());
     title.appendChild(text("span", "", p.mode === "update" ? "Update the saved password?" : "Save this login to Sompio?"));
     const x = text("button", "x", "×");
     x.title = "Not now";

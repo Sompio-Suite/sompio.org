@@ -26,7 +26,7 @@ export default function Home({ scan, onReview, onGo, onOpen }: Props) {
   const scanned = scan?.scanned_at_ms != null;
   const total = scan?.total_findings ?? 0;
   const open = scan?.open ?? 0;
-  const urgent = scan?.by_kind.filter((k) => k.severity === 3).reduce((a, k) => a + k.open, 0) ?? 0;
+  const urgent = scan?.by_kind.filter((k) => k.severity === 3).reduce((a, k) => a + k.mine_open, 0) ?? 0;
   const kinds = (scan?.by_kind ?? [])
     .filter((k) => k.open > 0)
     .sort((a, b) => b.severity - a.severity || b.open - a.open);

@@ -590,6 +590,18 @@ fn detect_message(scanner: &Scanner, platform: &str, content: &str) -> Vec<Detec
     found
 }
 
+/// Whether a finding at `start` is in text someone else wrote or that's about someone else: in a sent
+/// email, the recipients on the "To:" line and the quoted or forwarded email under your own words.
+pub(crate) fn is_theirs(platform: &str, content: &str, start: usize) -> bool {
+    if platform != "email" {
+        return false;
+    }
+    if content.starts_with("To: ") && start < content.find('\n').unwrap_or(content.len()) {
+        return true;
+    }
+    content.find(crate::import::QUOTED_MARK).is_some_and(|q| start >= q)
+}
+
 // ---------------------------------------------------------------------------------
 // Running a scan and reading results
 
@@ -602,6 +614,8 @@ pub struct KindCount {
     pub count: i64,
     /// findings still to review (not decided, or marked for later)
     pub open: i64,
+    /// the same, leaving out findings in someone else's words: what the score counts
+    pub mine_open: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -615,6 +629,8 @@ pub struct ScanSummary {
     /// marked deleted or not a problem
     pub done: i64,
     pub ignored_rules: i64,
+    /// findings in someone else's words (a quoted email, a recipient's address)
+    pub theirs: i64,
     pub scanned_at_ms: Option<i64>,
     pub by_kind: Vec<KindCount>,
 }
@@ -643,6 +659,8 @@ pub struct FindingView {
     pub file_path: Option<String>,
     /// How many findings in the same list have this exact value (1 = only here)
     pub repeats: i64,
+    /// Found in someone else's words: an email you quoted or forwarded, or a recipient's address
+    pub theirs: bool,
 }
 
 /// Every place one value was found, for acting on all of them at once.
@@ -694,7 +712,7 @@ pub fn run_scan(
             "SELECT m.id, m.content, c.platform FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.content <> ''",
         )?;
         let mut write = tx.prepare(
-            "INSERT INTO findings(message_id, kind, severity, start_byte, end_byte, fp) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO findings(message_id, kind, severity, start_byte, end_byte, fp, theirs) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )?;
         let mut rows = read.query([])?;
         let mut done = 0i64;
@@ -707,7 +725,8 @@ pub fn run_scan(
                 if ignored.contains(&(d.kind.key().to_string(), fp.clone())) {
                     continue;
                 }
-                write.execute(params![id, d.kind.key(), d.kind.severity(), d.start as i64, d.end as i64, fp])?;
+                let theirs = is_theirs(&platform, &content, d.start);
+                write.execute(params![id, d.kind.key(), d.kind.severity(), d.start as i64, d.end as i64, fp, theirs])?;
             }
             done += 1;
             if done % 5000 == 0 {
@@ -830,19 +849,20 @@ impl Store {
         let c = &self.conn;
         let one = |sql: &str| -> Result<i64> { Ok(c.query_row(sql, [], |r| r.get(0))?) };
         let mut stmt = c.prepare(&format!(
-            "SELECT f.kind, COUNT(*), SUM(CASE WHEN r.status IS NULL OR r.status = 'later' THEN 1 ELSE 0 END)
+            "SELECT f.kind, COUNT(*), SUM(CASE WHEN r.status IS NULL OR r.status = 'later' THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (r.status IS NULL OR r.status = 'later') AND f.theirs = 0 THEN 1 ELSE 0 END)
              {FINDING_FROM} GROUP BY f.kind"
         ))?;
-        let mut counts: HashMap<String, (i64, i64)> = HashMap::new();
-        for row in stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get(1)?, r.get(2)?)))? {
-            let (k, n, open) = row?;
-            counts.insert(k, (n, open));
+        let mut counts: HashMap<String, (i64, i64, i64)> = HashMap::new();
+        for row in stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))? {
+            let (k, n, open, mine_open) = row?;
+            counts.insert(k, (n, open, mine_open));
         }
         let by_kind = Kind::ALL
             .into_iter()
             .map(|k| {
-                let (count, open) = counts.get(k.key()).copied().unwrap_or((0, 0));
-                KindCount { kind: k, label: k.label(), severity: k.severity(), advice: k.advice(), count, open }
+                let (count, open, mine_open) = counts.get(k.key()).copied().unwrap_or((0, 0, 0));
+                KindCount { kind: k, label: k.label(), severity: k.severity(), advice: k.advice(), count, open, mine_open }
             })
             .collect();
         let status_count = |filter: StatusFilter| one(&format!("SELECT COUNT(*) {FINDING_FROM} WHERE {}", filter.sql()));
@@ -854,6 +874,7 @@ impl Store {
             later: status_count(StatusFilter::Later)?,
             done: status_count(StatusFilter::Done)?,
             ignored_rules: one("SELECT COUNT(*) FROM ignored")?,
+            theirs: one("SELECT COUNT(*) FROM findings WHERE theirs = 1")?,
             scanned_at_ms: self.get_meta("scanned_at_ms")?.and_then(|s| s.parse().ok()),
             by_kind,
         })
@@ -889,7 +910,7 @@ impl Store {
         let base = format!(
             "WITH base AS (
                SELECT f.id, f.message_id, m.channel_id, ch.name AS cname, ch.platform, m.ts, f.kind, f.severity,
-                      f.start_byte, f.end_byte, m.content, r.status, m.link, m.attachments,
+                      f.start_byte, f.end_byte, m.content, r.status, m.link, m.attachments, f.theirs,
                       ROW_NUMBER() OVER (PARTITION BY f.kind, f.fp ORDER BY m.ts DESC, f.id) AS rn,
                       COUNT(*) OVER (PARTITION BY f.kind, f.fp) AS repeats
                {FINDING_FROM}
@@ -908,12 +929,12 @@ impl Store {
         )?;
         let mut stmt = c.prepare_cached(&format!(
             "{base} SELECT id, message_id, channel_id, cname, platform, ts, kind, start_byte, end_byte, content, status, link,
-                           attachments, repeats
+                           attachments, repeats, theirs
              FROM base WHERE {keep}
-             ORDER BY severity DESC, repeats * (?6) DESC, ts DESC, start_byte
+             ORDER BY theirs, severity DESC, repeats * (?6) DESC, ts DESC, start_byte
              LIMIT ?3 OFFSET ?4"
         ))?;
-        type Row = (i64, i64, i64, String, String, i64, String, usize, usize, String, Option<String>, Option<String>, String, i64);
+        type Row = (i64, i64, i64, String, String, i64, String, usize, usize, String, Option<String>, Option<String>, String, i64, bool);
         let rows: Vec<Row> = stmt
             .query_map(params![q.kind, q.only_id, lim, off, q.platform, group, q.same_as], |r| {
                 Ok((
@@ -931,12 +952,13 @@ impl Store {
                     r.get(11)?,
                     r.get(12)?,
                     r.get(13)?,
+                    r.get(14)?,
                 ))
             })?
             .collect::<rusqlite::Result<_>>()?;
 
         let mut items = Vec::with_capacity(rows.len());
-        for (id, mid, cid, cname, platform, ts, k, start, end, content, status, link, attachments, repeats) in rows {
+        for (id, mid, cid, cname, platform, ts, k, start, end, content, status, link, attachments, repeats, theirs) in rows {
             let Some(kind) = Kind::from_key(&k) else { continue };
             if end > content.len() || !content.is_char_boundary(start) || !content.is_char_boundary(end) {
                 continue;
@@ -963,6 +985,7 @@ impl Store {
                 link,
                 file_path,
                 repeats,
+                theirs,
             });
         }
         Ok(FindingsPage { total, offset, items })
