@@ -146,6 +146,19 @@ pub fn load_demo(store: &mut Store) -> Result<()> {
                 let text = if rng.next() < 0.05 { rng.leak().to_string() } else { rng.chatter() };
                 w.message(&format!("{platform}-{i}-{j}"), cid, ts, &text, "", None)?;
             }
+            if platform == "email" {
+                // Sent mail the way Trace stores it: recipients, subject, your words, and the email you
+                // replied to after the marker. What's in that part, or on the To: line, isn't yours.
+                let mark = crate::import::QUOTED_MARK;
+                let mails = [
+                    format!("To: noor.bakker@example.org\nSubject: Re: the weekend\n\nSounds good, see you Saturday!{mark}Op vr 3 jun. 2022 om 18:10 schreef Noor <noor.bakker@example.org>:\nNew number by the way: +31 6 87654321. And my new address is Prinsengracht 263."),
+                    format!("To: landlord@example.org\nSubject: Re: deposit\n\nHere it is: NL91 ABNA 0417 1643 00, in my name.{mark}On Mon, 6 Jun 2022 at 09:12, Jan Visser <landlord@example.org> wrote:\nCould you send me your account number for the deposit? You can reach me on +31 20 555 0134."),
+                ];
+                for (k, m) in mails.iter().enumerate() {
+                    let ts = start + (rng.next() * span as f64) as i64;
+                    w.message(&format!("{platform}-{i}-reply{k}"), cid, ts, m, "", None)?;
+                }
+            }
         }
         w.finish("Sample data")?;
     }

@@ -103,7 +103,7 @@ export interface TgStatus { has_app_key: boolean; connected: boolean; name: stri
 export type TgStep = { step: "done"; name: string } | { step: "need_password"; hint: string | null };
 export interface TgProgress { chats_done: number; chats_total: number; messages: number }
 
-export interface EmailProvider { id: string; name: string; host: string; help_url: string }
+export interface EmailProvider { id: string; name: string; host: string; port: number; help_url: string }
 export interface EmailStatus { connected: boolean; address: string | null; provider: string | null }
 export interface EmailProgress { done: number; total: number }
 

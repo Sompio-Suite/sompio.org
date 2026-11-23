@@ -361,7 +361,7 @@ pub(crate) fn detect(names: &[String]) -> Option<&'static str> {
     if has_file("comments.csv") || has_file("posts.csv") {
         return Some("reddit");
     }
-    if lower.iter().any(|n| n.ends_with(".mbox")) {
+    if lower.iter().any(|n| n.ends_with(".mbox") || n.ends_with(".eml")) {
         return Some("email");
     }
     if lower.iter().any(|n| whatsapp::is_chat_file(n)) {
@@ -422,7 +422,7 @@ pub fn import_package(
     let names = src.names();
     let platform = detect(&names).ok_or_else(|| {
         anyhow!(
-            "Sompio doesn't recognise this file. It reads the data exports from Discord, Reddit, Telegram (JSON), X, WhatsApp, Instagram and Facebook (JSON), TikTok (JSON), Snapchat, LinkedIn and Gmail (Google Takeout). Open the file they sent you, or the folder you extracted it to."
+            "Sompio doesn't recognise this file. It reads the data exports from Discord, Reddit, Telegram (JSON), X, WhatsApp, Instagram and Facebook (JSON), TikTok (JSON), Snapchat, LinkedIn, Gmail (Google Takeout) and exported emails (.eml, from Tuta or Proton Mail). Open the file they sent you, or the folder you extracted it to."
         )
     })?;
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, listen, openLink, type EmailProgress, type EmailProvider, type EmailStatus } from "../api";
+import { api, listen, openLink, pickFolder, type EmailProgress, type EmailProvider, type EmailStatus } from "../api";
 import { n } from "../format";
 import Icon from "../Icon";
 
@@ -16,8 +16,21 @@ const APP_PASSWORD_HELP: Record<string, string> = {
   icloud: "Sign in at account.apple.com, open Sign-In and Security, then App-Specific Passwords. Create one called Sompio and paste it here.",
   gmx: "In GMX settings, turn on POP3 & IMAP access, and use an app password if you have two-factor sign-in on.",
   fastmail: "In Fastmail, open Settings, Privacy & Security, then Manage app passwords. Create one with IMAP access.",
-  other: "Use your provider's IMAP server (it usually starts with imap.) and an app password if they offer them.",
+  proton: "Proton Mail works through Proton Mail Bridge (paid plans). Install Bridge, sign in, open your account's mailbox details, and copy the IMAP port and password it shows. The server is on your own computer: 127.0.0.1.",
+  mailboxorg: "Use your mailbox.org address and password, or an app password if you've set one up.",
+  posteo: "Use your Posteo address and password.",
+  runbox: "Use your Runbox address and password, or an app password if you've set one up.",
+  startmail: "StartMail needs its own password for mail apps, not your login password: generate one in StartMail's settings and paste it here.",
+  other: "Use your provider's IMAP server (it usually starts with imap.). Add :port if it isn't 993, like imap.example.com:143. Use an app password if they offer them.",
 };
+
+/** What the password field is called, where it isn't an app password. */
+const PASSWORD_LABEL: Record<string, string> = {
+  proton: "Bridge password", mailboxorg: "Password", posteo: "Password", runbox: "Password", startmail: "IMAP password",
+};
+
+/** Providers with no IMAP, reached through an export instead. Listed after the ones Sompio connects to. */
+const EXPORT_ONLY = [{ id: "tuta", name: "Tuta (export your Sent folder)" }];
 
 export default function EmailConnect({ onSynced, onStatus }: Props) {
   const [status, setStatus] = useState<EmailStatus | null>(null);
@@ -70,7 +83,7 @@ export default function EmailConnect({ onSynced, onStatus }: Props) {
           <span className="small muted">
             {status.connected
               ? `Connected as ${status.address}${connectedName ? ` (${connectedName})` : ""}. Sompio reads your Sent folder and can move emails to Trash.`
-              : "Check everything you've sent for personal details. Gmail, Yahoo, iCloud and most other providers."}
+              : "Check everything you've sent for personal details. Gmail, Proton Mail, Yahoo, iCloud, Posteo, Tuta and most other providers."}
           </span>
         </div>
         {status.connected && !progress && (
@@ -126,16 +139,42 @@ export default function EmailConnect({ onSynced, onStatus }: Props) {
             <label>Provider
               <select value={f.provider} onChange={set("provider")}>
                 {providers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {EXPORT_ONLY.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </label>
             {f.provider === "other" && (
               <label className="grow">IMAP server<input type="text" value={f.host} onChange={set("host")} placeholder="imap.example.com" /></label>
             )}
+            {f.provider === "proton" && (
+              <label className="grow">Bridge IMAP server<input type="text" value={f.host} onChange={set("host")} placeholder="127.0.0.1:1143" /></label>
+            )}
           </div>
+          {f.provider === "tuta" ? (
+            <div className="export-route">
+              <p className="small">
+                Tuta doesn't let other apps read your mail, but its desktop app can export it. Sompio then reads the export on this computer.
+              </p>
+              <ol className="small">
+                <li>In the Tuta desktop app, open your <strong>Sent</strong> folder.</li>
+                <li>Select all emails there, then choose <strong>Export</strong>, and save them in a new folder.</li>
+                <li>Choose that folder here. Sompio keeps only the emails you sent.</li>
+              </ol>
+              <div className="toolbar">
+                <button type="button" className="primary" disabled={busy} onClick={() => run(async () => {
+                  const path = await pickFolder("Choose the folder with your exported emails");
+                  if (!path) return;
+                  const s = await api.importPackage(path);
+                  setOpen(false);
+                  await onSynced(s.messages);
+                })}>{busy ? "Reading…" : "Choose the exported folder"}</button>
+                <button type="button" className="quiet" onClick={() => setOpen(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (<>
           <label>Email address
             <input type="email" autoComplete="email" value={f.address} onChange={set("address")} placeholder="you@example.com" />
           </label>
-          <label>App password
+          <label>{PASSWORD_LABEL[f.provider] ?? "App password"}
             <input type="password" autoComplete="off" value={f.password} onChange={set("password")} />
           </label>
           <p className="small muted">
@@ -155,6 +194,7 @@ export default function EmailConnect({ onSynced, onStatus }: Props) {
             in your computer's own password store (Windows Credential Manager, the Mac's Keychain) and only talks to your mail server. Outlook.com and Hotmail need Microsoft
             sign-in, which Sompio doesn't support yet.
           </p>
+          </>)}
         </form>
       )}
 

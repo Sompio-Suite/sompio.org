@@ -24,7 +24,7 @@ import Samples from "./views/Samples";
 import ReportBug from "./views/ReportBug";
 import { BUY_URL, accessText, passEnding } from "./licence";
 import { date } from "./format";
-import { autoCheckEnabled, checkForUpdate, dismissUpdate, dueForCheck, updateDismissed, type UpdateInfo } from "./updates";
+import { autoCheckEnabled, checkForUpdate, dueForCheck, type UpdateInfo } from "./updates";
 
 /** Suite pages, then Clean's pages. */
 export type View =
@@ -105,18 +105,20 @@ export default function App() {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [menu]);
+  // Like KeePassXC: look for an update every time Sompio opens, then again every few hours while it
+  // stays open. "Later" hides the notice until the next start; it comes back then.
   useEffect(() => {
-    const run = () => {
-      if (autoCheckEnabled() && dueForCheck())
+    const run = (always: boolean) => {
+      if (autoCheckEnabled() && (always || dueForCheck()))
         checkForUpdate()
           .then((u) => {
             setUpdate(u);
-            if (u && !updateDismissed(u.version)) setUpdatePopup(true);
+            if (u) setUpdatePopup(true);
           })
           .catch(() => {});
     };
-    run();
-    const t = window.setInterval(run, 3_600_000);
+    run(true);
+    const t = window.setInterval(() => run(false), 3_600_000);
     return () => window.clearInterval(t);
   }, []);
   const installUpdate = async () => {
@@ -449,23 +451,27 @@ export default function App() {
         {inClean && (!unlocked ? gate("Trace") : ready === null ? null : cleanPage())}
       </main>
       {update && updatePopup && !pairAsk && (
-        <div className="modal-backdrop" role="presentation">
-          <div className="modal update-ask" role="dialog" aria-modal="true" aria-labelledby="update-title">
-            <h2 id="update-title">Sompio {update.version} is ready</h2>
-            {update.notes.trim() && (
-              <ul className="update-notes">
+        <div className="update-card" role="status" aria-labelledby="update-title">
+          <div className="update-card-head">
+            <Icon name="refresh" size={16} />
+            <strong id="update-title">Sompio {update.version} is available</strong>
+            <button className="quiet x" aria-label="Later" disabled={typeof installing === "number"} onClick={() => setUpdatePopup(false)}>×</button>
+          </div>
+          {update.notes.trim() && (
+            <details className="update-notes-fold">
+              <summary className="small">What's new</summary>
+              <ul className="update-notes small">
                 {update.notes.split("\n").map((l) => l.trim()).filter(Boolean).map((l, i) => <li key={i}>{l.replace(/^[-•]\s*/, "")}</li>)}
               </ul>
-            )}
-            {installing === null && <p className="small muted">It takes about a minute. Your data stays as it is, and Sompio restarts by itself.</p>}
-            {typeof installing === "number" && <p className="small">Downloading{installing ? ` ${installing}%` : "…"}. Sompio restarts by itself.</p>}
-            {installing === "error" && <p className="error" role="alert">The update didn't install. Try again later, or from Security.</p>}
-            <div className="guide-actions">
-              <button className="primary" disabled={typeof installing === "number"} onClick={installUpdate}>
-                {typeof installing === "number" ? "Updating…" : "Update now"}
-              </button>
-              <button disabled={typeof installing === "number"} onClick={() => { dismissUpdate(update.version); setUpdatePopup(false); }}>Later</button>
-            </div>
+            </details>
+          )}
+          {typeof installing === "number" && <p className="small">Downloading{installing ? ` ${installing}%` : "…"}. Sompio restarts by itself.</p>}
+          {installing === "error" && <p className="error small" role="alert">The update didn't install. Try again later, or from Security.</p>}
+          <div className="toolbar">
+            <button className="primary" disabled={typeof installing === "number"} onClick={installUpdate}>
+              {typeof installing === "number" ? "Updating…" : "Update now"}
+            </button>
+            <button className="quiet" disabled={typeof installing === "number"} onClick={() => setUpdatePopup(false)}>Later</button>
           </div>
         </div>
       )}

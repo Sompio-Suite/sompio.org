@@ -10,7 +10,7 @@
 
 use crate::SecretStore;
 use anyhow::{anyhow, bail, Context, Result};
-use imap::{ClientBuilder, Connection, Session};
+use imap::{ClientBuilder, ConnectionMode, Connection, Session};
 use imap_proto::NameAttribute;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -26,23 +26,33 @@ pub struct Provider {
     pub id: &'static str,
     pub name: &'static str,
     pub host: &'static str,
+    /// 993 for IMAP over TLS; Proton Mail Bridge listens on 1143 with STARTTLS.
+    pub port: u16,
     /// Where the person makes an app password.
     pub help_url: &'static str,
 }
 
 pub const PROVIDERS: &[Provider] = &[
-    Provider { id: "gmail", name: "Gmail", host: "imap.gmail.com", help_url: "https://myaccount.google.com/apppasswords" },
-    Provider { id: "yahoo", name: "Yahoo Mail", host: "imap.mail.yahoo.com", help_url: "https://login.yahoo.com/account/security" },
-    Provider { id: "icloud", name: "iCloud Mail", host: "imap.mail.me.com", help_url: "https://account.apple.com" },
-    Provider { id: "gmx", name: "GMX", host: "imap.gmx.net", help_url: "https://www.gmx.net" },
-    Provider { id: "fastmail", name: "Fastmail", host: "imap.fastmail.com", help_url: "https://app.fastmail.com/settings/security/apps" },
-    Provider { id: "other", name: "Other (IMAP)", host: "", help_url: "" },
+    Provider { id: "gmail", name: "Gmail", host: "imap.gmail.com", port: 993, help_url: "https://myaccount.google.com/apppasswords" },
+    Provider { id: "proton", name: "Proton Mail", host: "127.0.0.1", port: 1143, help_url: "https://proton.me/mail/bridge" },
+    Provider { id: "yahoo", name: "Yahoo Mail", host: "imap.mail.yahoo.com", port: 993, help_url: "https://login.yahoo.com/account/security" },
+    Provider { id: "icloud", name: "iCloud Mail", host: "imap.mail.me.com", port: 993, help_url: "https://account.apple.com" },
+    Provider { id: "gmx", name: "GMX", host: "imap.gmx.net", port: 993, help_url: "https://www.gmx.net" },
+    Provider { id: "fastmail", name: "Fastmail", host: "imap.fastmail.com", port: 993, help_url: "https://app.fastmail.com/settings/security/apps" },
+    Provider { id: "mailboxorg", name: "mailbox.org", host: "imap.mailbox.org", port: 993, help_url: "" },
+    Provider { id: "posteo", name: "Posteo", host: "posteo.de", port: 993, help_url: "" },
+    Provider { id: "runbox", name: "Runbox", host: "mail.runbox.com", port: 993, help_url: "https://help.runbox.com/imap/" },
+    Provider { id: "startmail", name: "StartMail", host: "imap.startmail.com", port: 993, help_url: "https://support.startmail.com/hc/en-us/articles/360006596718-Server-addresses" },
+    Provider { id: "other", name: "Other (IMAP)", host: "", port: 993, help_url: "" },
 ];
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Account {
     provider: String,
     host: String,
+    /// Saved accounts from before ports could change used 993.
+    #[serde(default = "imaps_port")]
+    port: u16,
     address: String,
     password: String,
 }
@@ -79,9 +89,53 @@ fn friendly(e: impl std::fmt::Display) -> anyhow::Error {
 
 type Imap = Session<Connection>;
 
+fn imaps_port() -> u16 {
+    993
+}
+
+/// A mail server on this computer, like Proton Mail Bridge.
+fn is_local(host: &str) -> bool {
+    matches!(host, "127.0.0.1" | "localhost" | "::1" | "[::1]")
+}
+
+/// "host" or "host:port" from the IMAP server field.
+fn split_host(input: &str, default_port: u16) -> Result<(String, u16)> {
+    let h = input.trim().trim_start_matches("imaps://").trim_start_matches("imap://").trim_end_matches('/');
+    let (host, port) = match h.rsplit_once(':') {
+        Some((host, port)) if !host.contains(':') || host.ends_with(']') => {
+            let port = port.parse::<u16>().map_err(|_| anyhow!("The port after the colon should be a number, like 993."))?;
+            (host.to_string(), port)
+        }
+        _ => (h.to_string(), default_port),
+    };
+    if host.is_empty() || host.contains(' ') {
+        bail!("Enter your provider's IMAP server, like imap.example.com.");
+    }
+    Ok((host, port))
+}
+
 fn login(a: &Account) -> Result<Imap> {
-    let client = ClientBuilder::new(a.host.as_str(), 993).connect().map_err(friendly)?;
-    client.login(&a.address, &a.password).map_err(|(e, _)| friendly(e))
+    let mut b = ClientBuilder::new(a.host.as_str(), a.port);
+    b = if a.port == 993 { b.mode(ConnectionMode::Tls) } else { b.mode(ConnectionMode::StartTls) };
+    if is_local(&a.host) {
+        // Proton Mail Bridge runs on this computer and makes its own certificate, which no
+        // authority signs. The connection never leaves the computer, so it's accepted, but only here.
+        b = b.danger_skip_tls_verify(true);
+    }
+    let client = b.connect().map_err(|e| friendly_for(&a.host, e))?;
+    client.login(&a.address, &a.password).map_err(|(e, _)| friendly_for(&a.host, e))
+}
+
+/// Like `friendly`, but explains Bridge when the server is on this computer.
+fn friendly_for(host: &str, e: impl std::fmt::Display) -> anyhow::Error {
+    let s = e.to_string().to_ascii_lowercase();
+    if is_local(host) && (s.contains("refused") || s.contains("timed out") || s.contains("unreachable")) {
+        anyhow!("Couldn't reach Proton Mail Bridge on this computer. Open Bridge, sign in, and check the IMAP port it shows.")
+    } else if is_local(host) && (s.contains("authenticat") || s.contains("login failed") || s.contains("[auth") || s.contains("no such user")) {
+        anyhow!("Bridge didn't accept that. Use the password Bridge shows under your account's mailbox details, not your Proton password.")
+    } else {
+        friendly(e)
+    }
 }
 
 /// The folder with the given special use, falling back to common names.
@@ -148,17 +202,14 @@ impl Email {
         if password.is_empty() {
             bail!("Enter the app password.");
         }
-        let host = match PROVIDERS.iter().find(|p| p.id == provider && !p.host.is_empty()) {
-            Some(p) => p.host.to_string(),
-            None => {
-                let h = host.trim().trim_start_matches("imaps://").trim_end_matches('/').to_string();
-                if h.is_empty() || h.contains(' ') {
-                    bail!("Enter your provider's IMAP server, like imap.example.com.");
-                }
-                h
-            }
+        let p = PROVIDERS.iter().find(|p| p.id == provider);
+        let (host, port) = match p {
+            // Bridge can be set to another port, so the field may override it.
+            Some(p) if p.id == "proton" && !host.trim().is_empty() => split_host(host, p.port)?,
+            Some(p) if !p.host.is_empty() => (p.host.to_string(), p.port),
+            _ => split_host(host, 993)?,
         };
-        let a = Account { provider: provider.to_string(), host, address: address.to_string(), password };
+        let a = Account { provider: provider.to_string(), host, port, address: address.to_string(), password };
         let mut s = login(&a)?;
         sent_folder(&mut s)?;
         let _ = s.logout();
@@ -244,6 +295,19 @@ impl Email {
 mod tests {
     use super::*;
     use crate::MemoryStore;
+
+    #[test]
+    fn host_and_port() {
+        assert_eq!(split_host("imap.example.com", 993).unwrap(), ("imap.example.com".into(), 993));
+        assert_eq!(split_host(" 127.0.0.1:1144 ", 1143).unwrap(), ("127.0.0.1".into(), 1144));
+        assert_eq!(split_host("imaps://mail.example.org:143/", 993).unwrap(), ("mail.example.org".into(), 143));
+        assert!(split_host("127.0.0.1:abc", 1143).is_err());
+        assert!(split_host("", 993).is_err());
+        assert!(is_local("127.0.0.1") && is_local("localhost") && !is_local("imap.gmail.com"));
+        // Accounts saved by earlier versions have no port: they used 993.
+        let old: Account = serde_json::from_str(r#"{"provider":"gmail","host":"imap.gmail.com","address":"a@b","password":"x"}"#).unwrap();
+        assert_eq!(old.port, 993);
+    }
 
     #[test]
     fn checks_input_before_going_online() {

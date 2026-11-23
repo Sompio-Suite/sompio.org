@@ -34,3 +34,11 @@ Op ma 1 jan. 2024 om 09:00 schreef Anna <anna@example.org>:\r\n> Mijn telefoon i
     assert_eq!(mine_open as usize, mine.len());
     assert_eq!(open as usize, all.len());
 }
+
+#[test]
+fn sample_data_shows_someone_elses_words() {
+    let mut store = Store::open_in_memory().unwrap();
+    sompio_clean::load_demo(&mut store).unwrap();
+    let summary = run_scan(&mut store, &ScanOptions::default(), &mut |_, _| {}).unwrap();
+    assert!(summary.theirs >= 3, "{}", summary.theirs);
+}

@@ -423,24 +423,16 @@ pub fn start(app: AppHandle) {
 
 pub fn tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Sompio", true, None::<&str>)?;
-    let pause = MenuItem::with_id(app, "pause", "Pause reminders for 1 hour", true, None::<&str>)?;
-    let resume = MenuItem::with_id(app, "resume", "Resume reminders", true, None::<&str>)?;
     let lock = MenuItem::with_id(app, "lock", "Lock Vault and Trace", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit (reminders stop)", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Sompio", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&open, &pause, &resume, &sep, &lock, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &sep, &lock, &quit])?;
     let mut b = TrayIconBuilder::with_id("sompio").menu(&menu).show_menu_on_left_click(false).tooltip("Sompio");
     if let Some(icon) = app.default_window_icon() {
         b = b.icon(icon.clone());
     }
     b.on_menu_event(|app, e| match e.id().as_ref() {
         "open" => show_main(app),
-        "pause" => {
-            let _ = cal_pause(app.clone(), app.state::<AppState>(), Some(60));
-        }
-        "resume" => {
-            let _ = cal_pause(app.clone(), app.state::<AppState>(), None);
-        }
         "lock" => {
             app.state::<AppState>().vault.lock();
             app.state::<AppState>().passwords.close();
@@ -468,29 +460,7 @@ pub fn show_main(app: &AppHandle) {
 
 fn update_tray(app: &AppHandle) {
     let Some(tray) = app.tray_by_id("sompio") else { return };
-    let state = app.state::<AppState>();
-    let discreet = state.calendar.popup_settings.lock().map(|s| s.discreet).unwrap_or(true);
-    let text = state
-        .calendar
-        .reminders
-        .lock()
-        .map(|r| {
-            let now = now();
-            if let Some(p) = r.shown().paused_until {
-                return format!("Sompio: reminders paused until {}", p.format("%H:%M"));
-            }
-            if !r.has_data() {
-                return "Sompio: unlock to start your reminders".to_string();
-            }
-            match r.next(now, 1).first() {
-                Some(o) if discreet => format!("Sompio: next reminder at {}", o.at.format(if o.at.date() == now.date() { "%H:%M" } else { "%a %H:%M" })),
-                Some(o) if o.at.date() == now.date() => format!("Sompio: next {} at {}", o.title, o.at.format("%H:%M")),
-                Some(o) => format!("Sompio: next {} on {}", o.title, o.at.format("%a %H:%M")),
-                None => "Sompio: nothing coming up".to_string(),
-            }
-        })
-        .unwrap_or_else(|_| "Sompio".into());
-    let _ = tray.set_tooltip(Some(text));
+    let _ = tray.set_tooltip(Some("Sompio"));
 }
 
 /// Closing the window keeps Sompio in the tray while there are reminders to show.

@@ -198,10 +198,62 @@ pub(super) fn import(
             })
         })?;
     }
+    import_eml(src, names, w, cid, &mut summary)?;
     if w.messages == 0 && total > 0 {
         summary.warnings.push(format!("Read {total} emails, but none were marked as sent by you."));
     }
     Ok(summary)
+}
+
+/// Folder names mail apps give sent mail, in the languages they're most often set to.
+const SENT_FOLDERS: [&str; 12] = [
+    "sent", "gesendet", "verzonden", "envoy", "enviad", "inviat", "skickat", "sendt", "wysłane", "lähetetyt", "odeslan", "verstuurd",
+];
+
+/// Whether a file sits in a folder for sent mail, like "Sent/2024-01-02 Re: rent.eml".
+fn in_sent_folder(path: &str) -> bool {
+    let p = path.to_lowercase().replace('\\', "/");
+    let dir = p.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+    dir.split('/').any(|part| SENT_FOLDERS.iter().any(|s| part.contains(s)))
+}
+
+/// The sender's address, lower-cased.
+fn from_address(raw: &[u8]) -> Option<String> {
+    let msg = MessageParser::default().parse_headers(raw)?;
+    msg.from()?.first()?.address().map(|a| a.trim().to_lowercase())
+}
+
+/// Emails exported one per file (.eml), as Tuta and Proton Mail export them. Sent mail is what sits
+/// in a "Sent" folder (or is marked sent). If no folder says so, the export is taken to be a Sent
+/// folder exported on its own when every email in it comes from the same address.
+fn import_eml(src: &mut Source, names: &[String], w: &mut Writer, cid: i64, summary: &mut ImportSummary) -> Result<()> {
+    let files: Vec<&String> = names.iter().filter(|n| n.to_ascii_lowercase().ends_with(".eml")).collect();
+    if files.is_empty() {
+        return Ok(());
+    }
+    let mut read = Vec::with_capacity(files.len());
+    for f in &files {
+        let raw = src.read(f)?;
+        let marked = in_sent_folder(f) || is_sent(&raw);
+        read.push((marked, from_address(&raw), raw));
+    }
+    let any_marked = read.iter().any(|(m, _, _)| *m);
+    let senders: std::collections::HashSet<&String> = read.iter().filter_map(|(_, f, _)| f.as_ref()).collect();
+    let one_sender = senders.len() == 1;
+    for (marked, _, raw) in &read {
+        if !(*marked || (!any_marked && one_sender)) {
+            continue;
+        }
+        if let Some(m) = super::parse_sent_mail(raw) {
+            w.message(&m.id, cid, m.ts, &m.text, "", None)?;
+        }
+    }
+    if !any_marked && !one_sender {
+        summary.warnings.push(
+            "These emails come from different senders, so Sompio can't tell which ones you sent. Export only your Sent folder, then open that folder in Sompio.".into(),
+        );
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -245,5 +297,14 @@ mod tests {
         // A sentence that merely mentions sending something isn't a quote.
         let (own, quoted) = split_quoted("From: the shop\nI ordered it yesterday.\nHere's what my teacher wrote:\nwell done");
         assert!(quoted.is_empty() && own.contains("the shop") && own.contains("well done"));
+    }
+
+    #[test]
+    fn sent_folders_in_exports() {
+        assert!(in_sent_folder("Tuta export/Sent/2024 Re rent.eml"));
+        assert!(in_sent_folder("Verzonden items\\a.eml"));
+        assert!(!in_sent_folder("Inbox/sent you a gift.eml"));
+        assert!(!in_sent_folder("a.eml"));
+        assert_eq!(from_address(b"From: Sam <Sam@Example.org>\r\nSubject: x\r\n\r\nhi").as_deref(), Some("sam@example.org"));
     }
 }
