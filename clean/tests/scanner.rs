@@ -178,3 +178,233 @@ fn real_postcodes_after_numbers_still_count() {
     assert!(has("Tel 020-1234567, Damrak 1\n1012 LG Amsterdam", Kind::Postcode));
     assert!(has("Laan 3/2\n3511 AB Utrecht", Kind::Postcode));
 }
+
+#[test]
+fn postcodes_in_a_company_signature_block_are_skipped() {
+    // The tester's Booking.com email: name, street and postcode on separate lines.
+    assert!(!has("Thanks for booking!\n\nBooking.com\nOosterdokskade 163\n1011 DL Amsterdam\nThe Netherlands", Kind::Postcode));
+    assert!(!has("Kind regards,\nExample B.V.\nKeizersgracht 1\n1015 CJ Amsterdam", Kind::Postcode));
+    // Your own address under your name still counts, and so does a sentence with a website in it.
+    assert!(has("Groeten,\nSam Rivers\nPrinsengracht 263\n1016 GV Amsterdam", Kind::Postcode));
+    assert!(has("I found the flat on funda.nl last week.\nThe address is Damrak 1\n1012 LG Amsterdam", Kind::Postcode));
+}
+
+#[test]
+fn booking_signature_on_one_line_is_skipped() {
+    // How the tester's email looks after the HTML is turned into text: a link, then the signature on one line.
+    assert!(!has("<https://www.booking.com/content/help.html?aid=2311236#tns_travellers_gonewrong> Booking.com Oosterdokskade 163 1011 DL Amsterdam The Netherlands ----", Kind::Postcode));
+    assert!(!has("<https://www.booking.com/help?aid=2311236#tns_travellers_gonewrong>\nBooking.com Oosterdokskade 163 1011 DL Amsterdam The Netherlands", Kind::Postcode));
+}
+
+#[test]
+fn addresses_and_postcodes_from_other_countries() {
+    let yes = [
+        ("italy-booking", "Location 305 Via Vittorio Emanuele II, 95124 Catania, Italy", Kind::Postcode),
+        ("italy-street", "Location 305 Via Vittorio Emanuele II, 95124 Catania, Italy", Kind::Address),
+        ("germany", "Hauptstraße 5\n10115 Berlin", Kind::Postcode),
+        ("germany-prefix", "Anschrift: D-10115 Berlin", Kind::Postcode),
+        ("france", "12 rue de Rivoli, 75001 Paris", Kind::Postcode),
+        ("poland", "ul. Długa 7, 00-238 Warszawa", Kind::Postcode),
+        ("portugal", "Rua Augusta 24, 1100-048 Lisboa, Portugal", Kind::Postcode),
+        ("brazil", "Avenida Paulista 1578, 01310-200 São Paulo, Brasil", Kind::Postcode),
+        ("sweden", "Drottninggatan 5, 111 51 Stockholm", Kind::Postcode),
+        ("sweden-street", "Drottninggatan 5, 111 51 Stockholm", Kind::Address),
+        ("spain-caps", "Calle Mayor 5\n28013 MADRID", Kind::Postcode),
+        ("country-only", "Hotel Bellevue\n8001 Zürich, Switzerland", Kind::Postcode),
+        ("us", "1600 Amphitheatre Parkway, Mountain View, CA 94043", Kind::Postcode),
+        ("us-street", "1600 Amphitheatre Parkway, Mountain View, CA 94043", Kind::Address),
+        ("uk", "10 Downing Street, London SW1A 2AA", Kind::Postcode),
+        ("canada", "Toronto, ON M5V 3L9", Kind::Postcode),
+        ("australia", "Sydney NSW 2000", Kind::Postcode),
+        ("ireland", "Grafton Street 12, Dublin D02 X285", Kind::Postcode),
+        ("japan", "〒100-0001 東京都千代田区", Kind::Postcode),
+        ("hungary", "Andrássy út 12, 1061 Budapest", Kind::Postcode),
+        ("finland", "Aleksanterinkatu 52, 00100 Helsinki", Kind::Postcode),
+    ];
+    let missed: Vec<_> = yes.iter().filter(|(_, t, k)| !has(t, *k)).map(|(n, _, _)| *n).collect();
+    assert!(missed.is_empty(), "missed: {missed:?}");
+
+    // Numbers that are not postcodes.
+    let no = [
+        ("price", "Total, 2500 Euros"),
+        ("year", "In 2019 Rome was hot"),
+        ("year-country", "Released in 2024 Paris, France"),
+        ("order", "Order 12345 Shipped today"),
+        ("hours", "Meeting at 1500 Hours"),
+        ("house-number", "1600 Amphitheatre Parkway, Mountain View, CA 94043"),
+        ("no-comma-zip", "call me at TX 78701 later"),
+        ("tracking", "Tracking 482910 Delivered"),
+        ("phone", "Tel 020 555 12 Amsterdam"),
+        ("pages", "See pages 1200 Onwards"),
+    ];
+    let wrong: Vec<_> = no
+        .iter()
+        .filter(|(n, t)| {
+            let s = Scanner::new(&ScanOptions { watch_terms: vec![] }).unwrap();
+            s.detect(t).iter().any(|d| d.kind == Kind::Postcode && (*n != "house-number" || &t[d.start..d.end] == "1600"))
+        })
+        .map(|(n, _)| *n)
+        .collect();
+    assert!(wrong.is_empty(), "wrongly flagged: {wrong:?}");
+}
+
+#[test]
+fn addresses_and_postcodes_around_the_world() {
+    use Kind::{Address as A, Postcode as P};
+    let yes: &[(&str, &str, Kind)] = &[
+        // Africa
+        ("south-africa", "12 Long Street, Cape Town, 8001", P),
+        ("south-africa-street", "12 Long Street, Cape Town, 8001", A),
+        ("kenya-box", "P.O. Box 30126, Nairobi", A),
+        ("kenya-postcode", "Kenyatta Avenue 14\n00100 Nairobi, Kenya", P),
+        ("nigeria", "15 Allen Avenue, Ikeja, Lagos 100271, Nigeria", P),
+        ("egypt", "١٢ شارع التحرير، القاهرة", A),
+        ("morocco", "24 Rue Mohammed V, 20250 Casablanca, Maroc", P),
+        ("senegal-bp", "B.P. 3010 Dakar, Sénégal", A),
+        ("ghana-gps", "GA-183-8164, Accra, Ghana", P),
+        ("ethiopia", "Bole Road 12\n1000 Addis Ababa, Ethiopia", P),
+        ("tunisia", "Avenue Habib Bourguiba 5, 1001 Tunis", P),
+        // Americas
+        ("us", "350 Fifth Avenue, New York, NY 10118", P),
+        ("us-zip4", "Austin, TX 78701-1234", P),
+        ("canada", "290 Bremner Blvd, Toronto, ON M5V 3L9", P),
+        ("mexico", "Av. Insurgentes Sur 1602, Col. Crédito Constructor, 03940 Ciudad de México", P),
+        ("mexico-street", "Av. Insurgentes Sur 1602, Col. Crédito Constructor, 03940 Ciudad de México", A),
+        ("mexico-cp", "C.P. 03940", P),
+        ("brazil", "Avenida Paulista 1578, 01310-200 São Paulo, Brasil", P),
+        ("brazil-cep", "CEP: 01310-200", P),
+        ("argentina", "Av. Corrientes 1234, C1043AAZ Buenos Aires", P),
+        ("colombia", "Calle 93 # 11-26, Bogotá", A),
+        ("chile", "Avenida Providencia 1234, 7500000 Santiago, Chile", P),
+        ("peru", "Av. Larco 345, Miraflores 15074, Peru", P),
+        // Europe
+        ("russia", "ул. Тверская, д. 7, Москва, 125009", P),
+        ("russia-street", "ул. Тверская, д. 7, Москва, 125009", A),
+        ("russia-start", "125009, Москва, ул. Тверская, 7", P),
+        ("ukraine", "вул. Хрещатик, 22, Київ, 01001", P),
+        ("greece", "Οδός Ερμού 12, 105 63 Αθήνα", P),
+        ("greece-street", "Οδός Ερμού 12, 105 63 Αθήνα", A),
+        ("czech", "Vodičkova 12\n110 00 Praha 1, Czech Republic", P),
+        ("latvia", "Brīvības iela 1, LV-1010 Rīga", P),
+        ("malta", "Republic Street 12, Valletta VLT 1117, Malta", P),
+        ("plz", "PLZ 10115", P),
+        ("uk", "221B Baker Street, London NW1 6XE", P),
+        // Middle East
+        ("israel", "רחוב הרצל 12, תל אביב", A),
+        ("iran", "خیابان ولیعصر، پلاک ۱۲", A),
+        ("saudi", "King Fahd Road 25\nRiyadh 12271, Saudi Arabia", P),
+        ("turkey", "İstiklal Caddesi No: 5, 34433 Beyoğlu, İstanbul", P),
+        ("uae-box", "PO Box 12345, Dubai, United Arab Emirates", A),
+        // Asia
+        ("india", "12 MG Road, Bengaluru 560001", P),
+        ("india-space", "Flat No. 4, Andheri West, Mumbai - 400 053, India", P),
+        ("india-flat", "Flat No. 4, Andheri West, Mumbai - 400 053, India", A),
+        ("india-pin", "PIN code: 110001", P),
+        ("pakistan", "House No. 12, Street 5, F-7/2, Islamabad 44000, Pakistan", P),
+        ("bangladesh", "House 12, Road 5, Dhanmondi, Dhaka 1205, Bangladesh", P),
+        ("china", "北京市朝阳区建国路88号", A),
+        ("china-postcode", "邮编：100022", P),
+        ("japan", "東京都千代田区丸の内1丁目9番1号", A),
+        ("japan-postcode", "〒100-0005 東京都千代田区", P),
+        ("korea", "서울특별시 강남구 테헤란로 152", A),
+        ("korea-postcode", "우편번호 06236", P),
+        ("singapore", "10 Bayfront Avenue, Singapore 018956", P),
+        ("malaysia", "Jalan Sultan Ismail 12, 50250 Kuala Lumpur", P),
+        ("malaysia-street", "Jalan Sultan Ismail 12, 50250 Kuala Lumpur", A),
+        ("indonesia", "Jl. M.H. Thamrin No. 1, Jakarta 10310, Indonesia", P),
+        ("indonesia-street", "Jl. M.H. Thamrin No. 1, Jakarta 10310, Indonesia", A),
+        ("thailand", "123/45 ถนนสุขุมวิท กรุงเทพฯ 10110", A),
+        ("thailand-postcode", "Sukhumvit Road 123, Bangkok 10110, Thailand", P),
+        ("vietnam", "45 Đường Lê Lợi, Quận 1, Hồ Chí Minh", A),
+        ("philippines", "6750 Ayala Avenue, Makati City 1226, Philippines", P),
+        // Oceania
+        ("australia", "1 Macquarie Street, Sydney NSW 2000", P),
+        ("new-zealand", "12 Queen Street, Auckland 1010, New Zealand", P),
+    ];
+    let missed: Vec<_> = yes.iter().filter(|(_, t, k)| !has(t, *k)).map(|(n, _, _)| *n).collect();
+    assert!(missed.is_empty(), "missed: {missed:?}");
+
+    // Everyday numbers that must not become postcodes.
+    let no = [
+        "Order 12345, Germany",
+        "Invoice 2500, India",
+        "Ticket 482910 for the match",
+        "your PIN: 1234",
+        "zip the 2024 files",
+        "We met in 2019, Singapore was hot",
+        "Flight KL 1234 to Lagos",
+        "Room 1205, Hilton",
+        "It costs 1500 rupees in Mumbai",
+        "the cap is 100 users",
+        "Page 1200 of 3000",
+        "ABC 1234 is the model",
+        "There were 50000 people in Nairobi",
+        "Call 0800 1234 today",
+        "Kenya 2023 report",
+    ];
+    let s = Scanner::new(&ScanOptions { watch_terms: vec![] }).unwrap();
+    let wrong: Vec<_> = no
+        .iter()
+        .filter_map(|t| s.detect(t).into_iter().find(|d| d.kind == Kind::Postcode).map(|d| format!("{t:?} -> {:?}", &t[d.start..d.end])))
+        .collect();
+    assert!(wrong.is_empty(), "wrongly flagged: {wrong:#?}");
+}
+
+#[test]
+fn postcode_word_is_not_part_of_the_find() {
+    let s = Scanner::new(&ScanOptions { watch_terms: vec![] }).unwrap();
+    let t = "PLZ 10115";
+    let d = s.detect(t).into_iter().find(|d| d.kind == Kind::Postcode).unwrap();
+    assert_eq!(&t[d.start..d.end], "10115");
+}
+
+#[test]
+fn everyday_numbers_in_receipts_and_newsletters_are_not_addresses() {
+    let s = Scanner::new(&ScanOptions { watch_terms: vec![] }).unwrap();
+    let texts = [
+        "Your order #482913 has shipped. Estimated delivery: Tuesday, 3 December 2024.",
+        "Subtotal: 1299 SEK\nShipping: 49 SEK\nTotal: 1348 SEK",
+        "Flight AF 1234 departs Paris CDG at 10:45, arrives 12:30 Madrid, Spain",
+        "Your verification code is 482913. Do not share it.",
+        "We have 2500 Members in Germany and 1200 Members in France",
+        "Room 1402, Floor 14, Marriott Hotel",
+        "Netflix: your plan costs 1399 INR per month in India",
+        "Episode 1204 Recap, United States edition",
+        "Model XPS 9310 Laptop, Japan import",
+        "In 2023, Nigeria grew 3%",
+        "Call us on 1800 123 456, Australia wide",
+        "Reference: 55012, Kenya Airways booking",
+        "Seat 12A, Gate 23, Terminal 3, Singapore",
+        "Lot 4521 Sold, Canada auction",
+        "Battery 5000 mAh, India version",
+        "Steps today: 10234, Great job!",
+        "Score: 1500 Points, Brazil server",
+        "Season 2024 Tickets, Mexico City",
+        "Unit price 1250, Quantity 3",
+        "CVE-2024-12345 fixed in version 2.3.4",
+        "The 10000 Steps challenge, Philippines",
+        "Download 4500 Songs, Ireland only",
+        "Price: 25000 KES, Nairobi",
+        "Hi all,\n1500 Tickets left\nGermany",
+        "Invoice no. 20240012\nAmsterdam, Netherlands",
+        "Mumbai Indians won by 45 runs, 200 Runs chased",
+    ];
+    let wrong: Vec<_> = texts
+        .iter()
+        .flat_map(|t| s.detect(t).into_iter().filter(|d| matches!(d.kind, Kind::Postcode | Kind::Address)).map(move |d| format!("{t:?} -> {:?}", &t[d.start..d.end])))
+        .collect();
+    assert!(wrong.is_empty(), "wrongly flagged: {wrong:#?}");
+}
+
+#[test]
+fn sample_addresses_from_around_the_world_are_found() {
+    for t in [
+        "my London flat: 18 Elm Grove, London N7 9QP",
+        "entrega em Rua das Flores 210, 01310-930 São Paulo",
+        "post it to P.O. Box 48213, Nairobi, Kenya",
+        "Tokyo apartment: 〒150-0042 渋谷区宇田川町3丁目12番5号",
+    ] {
+        assert!(has(t, Kind::Address), "no street address in {t:?}");
+    }
+    assert!(has("PLZ 10115", Kind::Postcode));
+}

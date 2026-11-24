@@ -451,7 +451,7 @@ const handlers: Record<string, (a: any) => unknown> = {
         .sort((a, b) => +isTheirs(a) - +isTheirs(b) || KINDS[b.kind][1] - KINDS[a.kind][1] || counts.get(valueKey(b))! - counts.get(valueKey(a))! || b.msg.ts - a.msg.ts);
     }
     const p = page(list, offset, limit);
-    return { ...p, items: p.items.map((f) => view(f, reveal, counts.get(valueKey(f)))) };
+    return { ...p, theirs: list.filter(isTheirs).length, items: p.items.map((f) => view(f, reveal, counts.get(valueKey(f)))) };
   },
   group_info: ({ id, status }) => {
     const me = findings.find((f) => f.id === id)!;

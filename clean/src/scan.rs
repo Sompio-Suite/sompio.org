@@ -151,7 +151,8 @@ pub struct Detection {
 }
 
 pub struct Scanner {
-    detectors: Vec<(Kind, Regex)>,
+    /// Each detector, and whether it only matches text with letters outside plain Latin.
+    detectors: Vec<(Kind, Regex, bool)>,
     watch: Option<Regex>,
 }
 
@@ -172,21 +173,70 @@ impl Scanner {
             d(Kind::Iban, r"(?i)\b(?:routing|aba|rtn)(?:\s*(?:no|number|#))?\.?\W{0,4}[0-9]{9}\b[^\n]{0,25}?\b(?:account|acct|acc)(?:\s*(?:no|number|#))?\.?\W{0,4}[0-9]{6,17}\b")?,
             d(Kind::Iban, r"(?i)\b(?:account|acct)(?:\s*(?:no|number|#))?\.?\W{0,4}[0-9]{6,17}\b[^\n]{0,25}?\b(?:routing|aba|rtn)(?:\s*(?:no|number|#))?\.?\W{0,4}[0-9]{9}\b")?,
             // Dutch / German / Belgian compound street names: "Prinsengracht 263", "Hauptstraße 5"
-            d(Kind::Address, r"(?i)\b\p{L}{2}[\p{L}'-]*(?:straat|laan|weg|gracht|plein|kade|dijk|singel|steeg|strasse|straße|gasse|allee)\s+[0-9]{1,4}[a-z]?\b")?,
+            d(Kind::Address, r"(?i)\b\p{L}{2}[\p{L}'-]*(?:straat|laan|weg|gracht|plein|kade|dijk|singel|steeg|strasse|straße|gasse|allee|platz|damm|ufer|gatan|gata|gade|vej|vägen|veien|katu)\s+[0-9]{1,4}[a-z]?\b")?,
             // English: "221B Baker Street" (capitalised name words, to skip "5 minutes down the road")
-            d(Kind::Address, r"\b[0-9]{1,5}[A-Za-z]?\s+(?:[A-Z][\p{L}'.-]*\s+){1,3}(?i:street|avenue|ave|road|rd|boulevard|blvd|lane)\b\.?")?,
+            d(Kind::Address, r"\b[0-9]{1,5}[A-Za-z]?\s+(?:[A-Z][\p{L}'.-]*\s+){1,3}(?i:street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|way|court|ct|place|pl|square|sq|crescent|terrace|parkway|pkwy|highway|hwy|grove|gardens|mews|row)\b\.?")?,
             // Romanian: "Strada Lipscani nr. 12", "Bd. Unirii 5"
             d(Kind::Address, r"(?i)\b(?:strada|str\.|bulevardul|bd\.|calea|aleea|[șşs]oseaua|splaiul)\s+\p{L}[\p{L} .-]{1,40}?,?\s*(?:nr\.?\s*)?[0-9]{1,4}\b")?,
             // French: "12 rue de Rivoli", "5 bis avenue Foch"
             d(Kind::Address, r"(?i:\b[0-9]{1,4}(?:\s?(?:bis|ter))?,?\s+(?:rue|avenue|av\.|boulevard|bd|place|chemin|all[ée]e|impasse|quai|cours)\s+(?:de la |de l'|du |des |de |d')?)\p{Lu}[\p{L}'-]+")?,
             // Spanish, Italian, Portuguese, Polish: "Calle Mayor 5", "Via Roma, 10", "Rua Augusta 24", "ul. Długa 7"
-            d(Kind::Address, r"(?i:\b(?:calle|c/|avenida|avda\.|plaza|paseo|carrer|via|viale|piazza|corso|rua|avenida|pra[çc]a|ulica|ul\.|aleja|al\.)\s+(?:de la |del |de |da |do |dos |della |dei )?)\p{Lu}[\p{L}'.-]*(?:\s\p{Lu}[\p{L}'.-]*){0,3},?\s*(?:n[º°o.]?\s*)?[0-9]{1,4}[a-zA-Z]?\b")?,
+            d(Kind::Address, r"(?i:\b(?:calle|c/|avenida|avda\.|plaza|paseo|carrer|via|viale|piazza|corso|rua|avenida|pra[çc]a|ulica|ul\.|aleja|al\.)\s+(?:de la |del |de |da |das |do |dos |della |dei |di )?)\p{Lu}[\p{L}'.-]*(?:\s\p{Lu}[\p{L}'.-]*){0,3},?\s*(?:n[º°o.]?\s*)?[0-9]{1,4}[a-zA-Z]?\b")?,
+            // House number first, as booking sites write it: "305 Via Vittorio Emanuele II", "12 Calle Mayor"
+            d(Kind::Address, r"\b[0-9]{1,4}[a-zA-Z]?,?\s+(?:Via|Viale|Piazza|Corso|Largo|Calle|Avenida|Avda\.|Plaza|Paseo|Carrer|Rua|Travessa|Pra[çc]a)\s+(?:de la |del |de |da |do |dos |della |dei |di )?\p{Lu}[\p{L}'.-]*(?:\s\p{Lu}[\p{L}'.-]*){0,3}")?,
+            // Spanish and Portuguese name-first with "Av.": "Av. Insurgentes Sur 1602", "Av. Paulista, 1578"
+            d(Kind::Address, r"\bAv\.\s+\p{Lu}[\p{L}'.-]*(?:\s\p{Lu}[\p{L}'.-]*){0,3},?\s*(?:n[º°o.]?\s*)?[0-9]{1,5}\b")?,
+            // Colombia: "Calle 93 # 11-26", "Carrera 7 # 71-21"
+            d(Kind::Address, r"(?i)\b(?:calle|carrera|cra\.?|cl\.?|kr\.?|avenida|transversal|diagonal)\s+[0-9]{1,3}\s?[a-z]?\s*(?:bis\s*)?(?:#|no\.?)\s*[0-9]{1,3}\s?[a-z]?\s*-\s*[0-9]{1,3}\b")?,
+            // P.O. boxes, the usual address in much of Africa and the Middle East
+            d(Kind::Address, r"(?i)\b(?:p\.?\s?o\.?\s?box|post office box|private bag|postfach|postbus|apartado(?: de correos| postal)?|caixa postal|casilla(?: de correo)?|bo[iî]te postale|skrytka pocztowa)\s*:?\s*(?:no\.?\s*)?[a-z]?[0-9]{1,6}\b|\bB\.P\.\s?[0-9]{1,6}\b|а/я\s?[0-9]{1,6}|ص\.\s?ب\.?\s?[0-9٠-٩]{1,6}")?,
+            // House and plot numbers, as in South Asia and Africa: "House No. 12", "Plot 45", "Flat 4B"
+            d(Kind::Address, r"(?i)\b(?:house\s?(?:no\.?|number|#)|plot\s?(?:no\.?|#)?|flat\s?(?:no\.?|#)|door\s?no\.?)\s*[0-9]{1,5}[a-z]?\b")?,
+            // Malaysia and Indonesia: "Jalan Sudirman No. 5", "Jl. Thamrin 10"
+            d(Kind::Address, r"\b(?:Jalan|Jl\.|Jln\.?)\s+\p{Lu}[\p{L}.']*(?:\s\p{Lu}[\p{L}.']*){0,3},?\s*(?:No\.?\s*)?[0-9]{1,4}\b")?,
+            // Vietnam: "123 Đường Lê Lợi", "45 Phố Huế"
+            d(Kind::Address, r"\b[0-9]{1,4}[a-zA-Z]?\s+(?:Đường|đường|Phố|phố)\s+\p{Lu}[\p{L}]*(?:\s\p{Lu}[\p{L}]*){0,3}")?,
+            // Russian and Ukrainian: "ул. Тверская, д. 7", "вул. Хрещатик, 22"
+            d(Kind::Address, r"(?i:\b(?:ул\.|улица|проспект|пр-т|пер\.|переулок|шоссе|бульвар|б-р|наб\.|набережная|вул\.|вулиця)\s*)\p{Lu}[\p{L}.-]*(?:\s\p{L}[\p{L}.-]*){0,2},?\s*(?:д\.|дом|буд\.)?\s*[0-9]{1,4}")?,
+            // Greek: "Οδός Ερμού 12", "Λεωφ. Κηφισίας 44"
+            d(Kind::Address, r"(?i:\b(?:οδός|οδ\.|λεωφόρος|λεωφ\.)\s+)\p{Greek}+(?:\s\p{Greek}+){0,2}\s+[0-9]{1,4}\b")?,
+            // Arabic and Persian: "١٢ شارع التحرير", "شارع الملك فهد 25", "خیابان ولیعصر، پلاک ۱۲"
+            d(Kind::Address, r"[0-9٠-٩]{1,4}\s+شارع\s+\p{Arabic}+(?:\s\p{Arabic}+){0,3}|(?:شارع|خیابان|کوچه)\s+\p{Arabic}+(?:\s\p{Arabic}+){0,3}[،,]?\s*(?:پلاک\s*|رقم\s*)?[0-9٠-٩۰-۹]{1,4}")?,
+            // Hebrew: "רחוב הרצל 12"
+            d(Kind::Address, r"(?:רחוב|רח')\s+\p{Hebrew}+(?:\s\p{Hebrew}+){0,2}\s+[0-9]{1,4}")?,
+            // Chinese, Japanese and Korean: "建国路88号", "1丁目2番地3", "테헤란로 123"
+            d(Kind::Address, r"\p{Han}{1,12}(?:路|街|大道|道|巷|弄)[0-9０-９一二三四五六七八九十百]{1,6}号")?,
+            d(Kind::Address, r"[0-9０-９一二三四五六七八九十]{1,3}丁目[0-9０-９]{1,4}(?:番地?|[-－])[0-9０-９]{0,4}")?,
+            d(Kind::Address, r"\p{Hangul}{1,10}(?:로|길|대로)\s?[0-9]{1,4}(?:번길\s?[0-9]{1,4})?")?,
+            // Thai: "123/45 ถนนสุขุมวิท", "ซอยสุขุมวิท 11"
+            d(Kind::Address, r"[0-9]{1,5}(?:/[0-9]{1,4})?\s*(?:ถนน|ซอย)\p{Thai}+|(?:ถนน|ซอย)\p{Thai}+\s?[0-9]{1,4}")?,
+            // Hungarian and Turkish: "Andrássy út 12", "Atatürk Caddesi No: 5"
+            d(Kind::Address, r"\b\p{Lu}[\p{L}.-]+\s+(?:utca|út|tér|körút)\s+[0-9]{1,4}\b")?,
+            d(Kind::Address, r"\b\p{Lu}[\p{L}]+\s+(?i:caddesi|cad\.|sokak|sokağı|sk\.|bulvarı|blv\.)\s*(?i:no)\.?\s*:?\s*[0-9]{1,4}\b")?,
             d(Kind::Phone, r"(?:\+|\b00)[1-9][0-9 ().-]{7,18}[0-9]")?,
             d(Kind::Phone, r"\b0[1-9][0-9 -]{7,12}[0-9]\b")?,
             d(Kind::Phone, r"\(?\b[2-9][0-9]{2}\)?[ .-][0-9]{3}[ .-][0-9]{4}\b")?,
             d(Kind::Email, r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")?,
             d(Kind::IpAddress, r"\b(?:(?:25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\b")?,
             d(Kind::Postcode, r"\b[1-9][0-9]{3} ?[A-Z]{2}\b")?, // Dutch postcode
+            // Postcodes written only in numbers, with an optional country prefix: 95124, 75001, 00-950,
+            // 1100-148, 01310-100, 114 55, D-10115. Only counted next to a city, street or country.
+            d(Kind::Postcode, r"\b(?:[A-Z]{1,2}-)?(?:[0-9]{5}-[0-9]{5}|[0-9]{5}-[0-9]{3}|[0-9]{4}-[0-9]{3}|[0-9]{3}-[0-9]{4}|[0-9]{2}-[0-9]{3}|[0-9]{3} [0-9]{3}|[0-9]{3} [0-9]{2}|[0-9]{4,7})\b")?,
+            // After the word for it, in any of many languages: "Postcode: 3811 AB", "PLZ 10115", "邮编 100022"
+            (Kind::Postcode, Regex::new(&format!(r"{POSTCODE_WORDS}[A-Z0-9](?:[A-Z0-9 -]{{1,8}}[A-Z0-9])?\b"))?),
+            // Malta (VLT 1117), Argentina (C1425DKF), Ghana's digital address (GA-123-4567)
+            d(Kind::Postcode, r"\b[A-Z]{3} [0-9]{4}\b")?,
+            d(Kind::Postcode, r"\b[A-HJ-NP-Z][0-9]{4}[A-Z]{3}\b")?,
+            d(Kind::Postcode, r"\b[A-Z]{2}-[0-9]{3,4}-[0-9]{4}\b")?,
+            // UK (SW1A 2AA), Canada (M5V 3L9), Ireland (D02 X285)
+            d(Kind::Postcode, r"\b[A-Z]{1,2}[0-9][A-Z0-9]? [0-9][ABD-HJLNP-UW-Z]{2}\b")?,
+            d(Kind::Postcode, r"\b[ABCEGHJ-NPRSTVXY][0-9][ABCEGHJ-NPRSTV-Z] [0-9][ABCEGHJ-NPRSTV-Z][0-9]\b")?,
+            d(Kind::Postcode, r"\b(?:[AC-FHKNPRTV-Y][0-9]{2}|D6W) [0-9AC-FHKNPRTV-Y]{4}\b")?,
+            // US state + ZIP after the city ("Austin, TX 78701"), Australian state + postcode ("Sydney NSW 2000")
+            d(Kind::Postcode, r"\b(?:AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|PR) [0-9]{5}(?:-[0-9]{4})?\b")?,
+            d(Kind::Postcode, r"\b(?:NSW|VIC|QLD|TAS|ACT) [0-9]{4}\b")?,
+            // Japan: 〒100-0001
+            d(Kind::Postcode, r"〒 ?[0-9]{3}-[0-9]{4}")?,
             d(Kind::CryptoWallet, r"\bbc1[a-z0-9]{25,59}\b|\b0x[a-fA-F0-9]{40}\b")?,
             // Dutch BSN, only next to its name (nine-digit numbers are everywhere); checked with the eleven test
             d(Kind::IdNumber, r"(?i)\b(?:bsn|burgerservicenummer|sofi-?nummer|citizen service number)\b\W{0,5}(?:(?:is|nr|nummer|number)\.?\s*:?\s*)?[0-9](?:[ .]?[0-9]){8}\b")?,
@@ -233,6 +283,10 @@ impl Scanner {
         } else {
             Some(Regex::new(&format!("(?i)(?:{})", terms.join("|")))?)
         };
+        let detectors: Vec<(Kind, Regex, bool)> = detectors.into_iter().map(|(k, re)| {
+            let script_only = SCRIPT_ONLY.iter().any(|w| re.as_str().contains(w));
+            (k, re, script_only)
+        }).collect();
         Ok(Self { detectors, watch })
     }
 
@@ -241,10 +295,16 @@ impl Scanner {
         if let Some(w) = &self.watch {
             found.extend(w.find_iter(text).map(|m| Detection { kind: Kind::WatchTerm, start: m.start(), end: m.end() }));
         }
-        for (kind, re) in &self.detectors {
+        let ascii = text.is_ascii();
+        for (kind, re, script_only) in &self.detectors {
+            if ascii && *script_only {
+                continue; // No Cyrillic, Arabic, Chinese… in this text, so these can't match.
+            }
             for m in re.find_iter(text) {
                 if validate(*kind, text, m.start(), m.end()) {
-                    found.push(Detection { kind: *kind, start: m.start(), end: m.end() });
+                    // Keep only the postcode itself, not the word before it ("PLZ 10115" → "10115")
+                    let skip = if *kind == Kind::Postcode { postcode_keyword(m.as_str()).map_or(0, |k| k.len()) } else { 0 };
+                    found.push(Detection { kind: *kind, start: m.start() + skip, end: m.end() });
                 }
             }
         }
@@ -358,20 +418,29 @@ fn validate(kind: Kind, text: &str, start: usize, end: usize) -> bool {
                 || (o[0] == 169 && o[1] == 254))
         }
         Kind::Postcode => {
-            let letters = &m[m.len() - 2..];
+            let tail = m.rsplit(' ').next().unwrap_or("");
+            let letters = if m.len() >= 2 && m.is_char_boundary(m.len() - 2) { &m[m.len() - 2..] } else { "" };
             let prev = before.trim_end_matches([' ', '\t']).chars().next_back();
             let next = after.trim_start_matches([' ', '\t']).chars().next();
-            // The last 120 characters before it, on the same line.
-            let line = before.rsplit('\n').next().unwrap_or("");
-            let mut cut = line.len().saturating_sub(120);
-            while !line.is_char_boundary(cut) {
+            if !postcode_shape_ok(m, tail, before, after) {
+                return false;
+            }
+            // The same line and the three lines above it: a company's signature puts its name a
+            // line or two above the address ("Booking.com / Oosterdokskade 163 / 1011 DL Amsterdam").
+            let lines: Vec<&str> = before.rsplit('\n').take(4).collect();
+            let mut near = lines.join("\n");
+            let mut cut = near.len().saturating_sub(240);
+            while !near.is_char_boundary(cut) {
                 cut += 1;
             }
-            let near = line[cut..].to_lowercase();
+            near = near[cut..].to_lowercase();
+            let brand_line = lines.iter().skip(1).any(|l| is_brand_line(l));
             !matches!(letters, "SA" | "SD" | "SS" | "AM" | "PM" | "GB" | "MB" | "KB" | "TB" | "HZ")
                 && !after.starts_with(|c: char| c.is_alphanumeric())
                 // The year of a date ("07/06/2018 MC") or part of a longer number or code.
-                && !matches!(prev, Some('/' | '-' | '.' | '#' | '_') | Some('0'..='9'))
+                && !matches!(prev, Some('/' | '.' | '#' | '_') | Some('0'..='9'))
+                // A dash only on its own, as in "Mumbai - 400 053", never as in "12-1017"
+                && !(prev == Some('-') && !before.trim_end_matches([' ', '\t']).trim_end_matches('-').ends_with([' ', '\t']))
                 // Also when something sits between the day and month and the year, as in the
                 // table cells of HTML emails ("07/06/ | 2018 MC", or a line break in between).
                 && !date_part_before(before)
@@ -380,6 +449,7 @@ fn validate(kind: Kind, text: &str, start: usize, end: usize) -> bool {
                 && ![" b.v.", " bv,", " bv ", " n.v.", " ltd", " gmbh", " inc.", "kvk", "chamber of commerce", "registered office", "statutaire zetel"]
                     .iter()
                     .any(|w| near.contains(w))
+                && !brand_line
         }
         Kind::IdNumber => id_valid(m, before, after),
         Kind::Passport => {
@@ -611,7 +681,7 @@ fn detect_message(scanner: &Scanner, platform: &str, content: &str) -> Vec<Detec
 
 /// Raised whenever detection changes in a way that alters findings. Stored data checked with an
 /// older version is checked again once, automatically: the user already chose to check it.
-pub const DETECTION_VERSION: u32 = 2;
+pub const DETECTION_VERSION: u32 = 3;
 
 /// Checks stored data again if it was last checked by an older version of the detection. Nothing
 /// new is read from the user's files or accounts; their decisions on findings are kept. Returns
@@ -625,6 +695,237 @@ pub fn recheck_if_outdated(store: &mut Store) -> Result<bool> {
     let opts = ScanOptions { watch_terms: store.watch_terms()? };
     run_scan(store, &opts, &mut |_, _| {})?;
     Ok(true)
+}
+
+/// Parts of the patterns that only match non-Latin scripts (or Vietnamese and 〒), so those
+/// detectors are skipped on plain-ASCII text.
+const SCRIPT_ONLY: &[&str] = &["улица", "οδός", "شارع", "רחוב", "大道", "丁目", "\\p{Hangul}", "ถนน", "〒 ?[0-9]{3}", "Đường"];
+
+/// The extra checks for each country's postcode shape. Dutch, UK, Canadian, US, Australian and
+/// Japanese ones say what they are; Irish ones and number-only ones need an address around them.
+fn postcode_shape_ok(m: &str, tail: &str, before: &str, after: &str) -> bool {
+    // "Postcode: …", "PLZ …", "CEP …", "邮编 …": the word says what it is.
+    if let Some(k) = postcode_keyword(m) {
+        let code = &m[k.len()..];
+        let n = code.chars().filter(|c| c.is_ascii_digit()).count();
+        let key = k.to_lowercase();
+        return n >= 3
+            && (!key.starts_with("pin") || n == 6) // an Indian PIN code, not a card PIN
+            && (!key.starts_with("zip") || n >= 5)
+            && (!key.starts_with("cap") || n == 5)
+            && (!(key.starts_with("c.p") || key.starts_with("cp")) || (4..=5).contains(&n));
+    }
+    if m.starts_with('〒') {
+        return true;
+    }
+    let has_letter = m.chars().any(|c| c.is_ascii_alphabetic());
+    let prefixed = m.chars().next().is_some_and(|c| c.is_ascii_alphabetic()) && m.contains('-') && !m.starts_with(|c: char| c.is_ascii_digit());
+    // Ghana's digital address: GA-123-4567
+    if m.matches('-').count() == 2 && m.chars().next().is_some_and(|c| c.is_ascii_alphabetic()) {
+        return city_after(after) || country_after(after) || before.to_lowercase().contains("ghana") || before.to_lowercase().contains("digital address");
+    }
+    // US ZIP: the state comes right after "City,"
+    if m.len() >= 8 && m.as_bytes()[2] == b' ' && tail.chars().all(|c| c.is_ascii_digit() || c == '-') && tail.len() >= 5 {
+        return before.trim_end().ends_with(',');
+    }
+    // Australia
+    if ["NSW ", "VIC ", "QLD ", "TAS ", "ACT "].iter().any(|p| m.starts_with(p)) {
+        return true;
+    }
+    // Malta (VLT 1117) and Argentina (C1425DKF): letters and numbers that could be any code, so
+    // only with an address around them.
+    let malta = m.len() == 8 && m.as_bytes()[3] == b' ' && m[..3].chars().all(|c| c.is_ascii_uppercase()) && m[4..].chars().all(|c| c.is_ascii_digit());
+    let argentina = m.len() == 8 && !m.contains(' ') && m[1..5].chars().all(|c| c.is_ascii_digit());
+    if malta || argentina {
+        let near = after.chars().take(80).collect::<String>().to_lowercase();
+        return street_near(before) || (malta && near.contains("malta")) || (argentina && (city_after(after) || near.contains("argentina")));
+    }
+    if has_letter && !prefixed {
+        if tail.len() == 4 && m.len() == 8 {
+            // Irish Eircode: needs a street or the country
+            return street_near(before) || country_after(after) || after.to_lowercase().contains("dublin") || before.to_lowercase().contains("dublin");
+        }
+        return true;
+    }
+
+    // Postcodes in numbers only. Cheapest checks first: most numbers in a mailbox have no
+    // city or country next to them.
+    let city = city_after(after);
+    let country = || country_after(after);
+    if prefixed {
+        return city || country();
+    }
+    let rest = after.trim_start_matches([' ', '\t']);
+    let end_after = matches!(rest.chars().next(), None | Some(',' | '\n' | '\r' | ')' | '.' | ';' | '|' | '<'));
+    // City or country before it, as in Asia, India, Russia and South Africa:
+    // "Mumbai 400001", "Singapore 238823", "Cape Town, 8001", "Москва, 125009".
+    let city_b = end_after && city_before(before);
+    let country_b = end_after && country_before(before);
+    let prev = before.trim_end_matches([' ', '\t']).chars().next_back();
+    let prev_ok = matches!(prev, None | Some(',' | ';' | '\n' | '\r' | '|' | '>' | '(' | ':'));
+    // A number after a label ("Reference: 55012", "Score: 1500") is that thing, not a postcode.
+    if matches!(prev, Some(':' | '#')) {
+        let label = before.trim_end_matches([' ', '\t', ':', '#']);
+        let word: String = label.chars().rev().take_while(|c| c.is_alphabetic()).collect::<Vec<_>>().into_iter().rev().collect();
+        if NOT_A_PLACE.contains(&word.to_lowercase().as_str()) {
+            return false;
+        }
+    }
+    if !city && !prev_ok && !city_b && !country_b {
+        return false;
+    }
+    let year = m.len() == 4 && (m.starts_with("19") || m.starts_with("20"));
+    // The house number of a street that follows ("1600 Amphitheatre Parkway, …") is not a postcode.
+    let segment: String = rest.split([',', '\n']).next().unwrap_or("").chars().take(40).collect();
+    if street_word(&segment) {
+        return false;
+    }
+    // A street on this line, before or after it ("125009, Москва, ул. Тверская, 7")
+    let line_after: String = rest.lines().next().unwrap_or("").chars().take(80).collect();
+    let street = street_near(before) || street_word(&line_after) && line_after.chars().any(|c| c.is_ascii_digit());
+    if year && !street {
+        return false;
+    }
+    if country_b {
+        return true;
+    }
+    if street {
+        return city || city_b || country();
+    }
+    // No street: a city and the country have to be there.
+    (city && prev_ok || city_b) && country()
+}
+
+/// "Postcode:", "PLZ", "CEP", "邮编" and the like at the start of a match: returns that part.
+fn postcode_keyword(m: &str) -> Option<&str> {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| Regex::new(&format!("^(?:{POSTCODE_WORDS})")).expect("valid pattern")).find(m).map(|k| &m[..k.end()])
+}
+
+/// The words people put before a postcode, in many languages, with what follows them up to the code.
+const POSTCODE_WORDS: &str = r"(?i:\b(?:post\s?code|postal\s?code|zip\s?code|zip|plz|postleitzahl|cap|c\.\s?p\.|cp|c[óo]digo postal|code postal|cep|pin\s?code|pincode|kod pocztowy|postnummer|postinumero|irányítószám|ir\.?\s?sz\.?|psč|po[šs]tovní směrovací číslo|почтовый индекс|поштовий індекс|индекс|індекс|τ\.\s?κ\.)\s*[:.#]?\s*|(?:邮编|邮政编码|郵便番号|우편번호|รหัสไปรษณีย์|الرمز البريدي|מיקוד)\s*[:：]?\s*〒?)";
+
+fn street_word(s: &str) -> bool {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| {
+        Regex::new(r"(?i)\b(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr|way|court|ct|place|pl|boulevard|blvd|highway|hwy|parkway|pkwy|square|sq|terrace|crescent|close|plot|house no|flat|apt|apartment|p\.?\s?o\.?\s?box|private bag|via|viale|piazza|piazzale|corso|largo|vicolo|calle|carrera|cra|avenida|avda|plaza|paseo|carrer|carretera|camino|colonia|col|rua|travessa|pra[çc]a|rue|av|chemin|quai|cours|impasse|all[ée]e|route|ulica|ul|aleja|al|plac|osiedle|strada|str|bulevardul|bd|calea|aleea|[șş]oseaua|splaiul|ulice|n[áa]m[ěe]st[íi]|utca|[úu]t|t[ée]r|k[öo]r[úu]t|odos|caddesi|cad|sokak|sk|mahallesi|mah|marg|nagar|jalan|jl|jln|soi|thanon|đường|phố|duong|barabara|mtaa|улица|ул|проспект|пр-т|переулок|пер|шоссе|бульвар|набережная|наб|вулиця|вул|οδός|οδ|λεωφόρος|λεωφ|شارع|خیابان|کوچه|רחוב|רח'|ถนน|ซอย|postfach|apartado|caixa postal|casilla|postbus)\b|\p{L}(?:straat|laan|weg|gracht|plein|kade|dijk|singel|steeg|strasse|straße|gasse|allee|platz|damm|ufer|gatan|gata|gade|vej|vägen|veien|katu|tie)\b|\p{Han}(?:路|街|大道|巷|弄|号|丁目|番地)|\p{Hangul}(?:로|길|대로)\s?[0-9]")
+            .expect("valid pattern")
+    })
+    .is_match(s)
+}
+
+/// A street name with a house number on this line or the line above.
+fn street_near(before: &str) -> bool {
+    let lines: Vec<&str> = before.rsplit('\n').take(2).collect();
+    let mut win = lines.into_iter().rev().collect::<Vec<_>>().join("\n");
+    let mut cut = win.len().saturating_sub(200);
+    while !win.is_char_boundary(cut) {
+        cut += 1;
+    }
+    win = win[cut..].to_string();
+    street_word(&win) && win.chars().any(|c| c.is_ascii_digit() || ('０'..='９').contains(&c) || ('٠'..='٩').contains(&c) || ('۰'..='۹').contains(&c))
+}
+
+/// A word that names a place: capitalised in scripts that have capitals, any word in those that don't.
+fn place_word(word: &str) -> bool {
+    let mut cs = word.chars();
+    let Some(first) = cs.next() else { return false };
+    let n = word.chars().count();
+    if first.is_uppercase() {
+        // "Catania", "São", or all capitals ("CATANIA")
+        n >= 3 || word.chars().all(|c| c.is_uppercase())
+    } else {
+        // Scripts without capitals: Chinese, Japanese, Korean, Arabic, Hebrew, Thai, Hindi…
+        first.is_alphabetic() && !first.is_lowercase() && n >= 2
+    }
+}
+
+/// Words that come before a number but are not a city: "Order 12345", "Invoice 2500,".
+const NOT_A_PLACE: &[&str] = &[
+    "order", "invoice", "ticket", "room", "page", "pages", "flight", "booking", "reservation", "ref", "reference", "case", "item",
+    "number", "no", "nr", "account", "customer", "member", "id", "code", "version", "model", "table", "seat", "gate", "bus",
+    "line", "route", "tracking", "receipt", "transaction", "payment", "total", "amount", "price", "year", "step", "chapter",
+    "bestelling", "factuur", "rechnung", "bestellung", "commande", "facture", "pedido", "factura", "ordine", "fattura",
+    "zamówienie", "faktura", "comanda", "factura", "kundennummer", "klantnummer", "auftrag", "pin", "otp",
+    "score", "points", "tickets", "members", "songs", "steps", "runs", "people", "users", "items", "units", "pieces",
+    "copies", "words", "euros", "dollars", "miles", "votes", "views", "likes", "followers", "copies", "pages",
+    "subscribers", "students", "employees", "visitors", "participants", "guests", "seats", "hours", "minutes",
+    "days", "weeks", "months", "years", "times", "calories", "level", "levels", "episode", "season", "lot", "unit",
+];
+
+/// A city right before the postcode: "Mumbai 400001", "Cape Town, 8001", "Москва, 125009".
+fn city_before(before: &str) -> bool {
+    let line = before.rsplit('\n').next().unwrap_or("");
+    let t = line.trim_end_matches([' ', '\t', '\u{a0}']);
+    let t = t.strip_suffix([',', '-', '–']).unwrap_or(t).trim_end();
+    let word: String = t.chars().rev().take_while(|c| c.is_alphabetic() || *c == '-' || *c == '\'' || *c == '.').collect::<Vec<_>>().into_iter().rev().collect();
+    let word = word.trim_start_matches(['-', '\'', '.']);
+    place_word(word) && !NOT_A_PLACE.contains(&word.to_lowercase().as_str())
+}
+
+/// A city name right after the postcode: "95124 Catania", "75001 Paris", "00-950 Warszawa",
+/// "125009, Москва".
+fn city_after(after: &str) -> bool {
+    let rest = after.trim_start_matches([' ', '\t', '\u{a0}']);
+    let rest = rest.strip_prefix(',').unwrap_or(rest).trim_start_matches([' ', '\t', '\u{a0}']);
+    let word: String = rest.chars().take_while(|c| c.is_alphabetic() || *c == '-' || *c == '\'').collect();
+    if !place_word(&word) {
+        return false;
+    }
+    if word.chars().all(|c| c.is_uppercase() || c == '-') && word.chars().next().is_some_and(|c| c.is_uppercase()) {
+        // An all-capitals city ("CATANIA") only at the end of the line or before a comma
+        let next = rest[word.len()..].trim_start_matches([' ', '\t']).chars().next();
+        return matches!(next, None | Some(',' | '\n' | '\r'));
+    }
+    if NOT_A_PLACE.contains(&word.to_lowercase().as_str()) {
+        return false;
+    }
+    // A city isn't followed by an everyday word ("1500 Tickets left"), only by another part of its
+    // name, a comma or the end of the line.
+    let next: String = rest[word.len()..].trim_start_matches([' ', '\t']).chars().take_while(|c| c.is_alphabetic()).collect();
+    let small = ["de", "del", "do", "da", "dos", "la", "le", "les", "di", "am", "an", "im", "sur", "upon", "on", "en", "aan", "y", "e", "i"];
+    !next.chars().next().is_some_and(|c| c.is_lowercase()) || small.contains(&next.as_str())
+}
+
+const COUNTRIES: &str = r"(?i:afghanistan|albania|shqipëri|algeria|algérie|الجزائر|andorra|angola|argentina|armenia|australia|austria|österreich|osterreich|azerbaijan|bahrain|bangladesh|বাংলাদেশ|barbados|belarus|беларусь|belgium|belgië|belgie|belgique|belize|benin|bénin|bhutan|bolivia|bosnia and herzegovina|bosnia|botswana|brazil|brasil|brunei|bulgaria|българия|burkina faso|burundi|cambodia|cameroon|cameroun|canada|cape verde|cabo verde|chad|tchad|chile|china|中国|中國|colombia|congo|drc|costa rica|côte d'ivoire|cote d'ivoire|ivory coast|croatia|hrvatska|cuba|cyprus|czech republic|czechia|česko|denmark|danmark|djibouti|dominican republic|república dominicana|ecuador|egypt|مصر|el salvador|estonia|eesti|eswatini|ethiopia|fiji|finland|suomi|france|gabon|gambia|georgia|germany|deutschland|ghana|greece|ελλάδα|guatemala|guinea|haiti|haïti|honduras|hong kong|香港|hungary|magyarország|iceland|ísland|india|भारत|indonesia|iran|ایران|iraq|العراق|ireland|éire|israel|ישראל|italy|italia|jamaica|japan|日本|jordan|الأردن|kazakhstan|қазақстан|kenya|korea|south korea|대한민국|한국|kosovo|kuwait|الكويت|kyrgyzstan|laos|latvia|latvija|lebanon|لبنان|lesotho|liberia|libya|liechtenstein|lithuania|lietuva|luxembourg|macau|madagascar|malawi|malaysia|maldives|mali|malta|mauritania|mauritius|maurice|mexico|méxico|moldova|monaco|mongolia|montenegro|morocco|maroc|المغرب|mozambique|moçambique|myanmar|namibia|nepal|नेपाल|netherlands|nederland|new zealand|aotearoa|nicaragua|niger|nigeria|north macedonia|macedonia|norway|norge|oman|عمان|pakistan|پاکستان|palestine|فلسطين|panama|panamá|papua new guinea|paraguay|peru|perú|philippines|pilipinas|poland|polska|portugal|puerto rico|qatar|قطر|romania|românia|russia|россия|rwanda|saudi arabia|السعودية|senegal|sénégal|serbia|srbija|србија|seychelles|sierra leone|singapore|新加坡|slovakia|slovensko|slovenia|slovenija|somalia|south africa|south sudan|spain|españa|espana|sri lanka|sudan|السودان|suriname|sweden|sverige|switzerland|schweiz|suisse|svizzera|syria|سوريا|taiwan|台灣|台湾|tajikistan|tanzania|thailand|ประเทศไทย|togo|trinidad and tobago|tunisia|tunisie|تونس|turkey|türkiye|turkiye|turkmenistan|uganda|ukraine|україна|united arab emirates|uae|الإمارات|united kingdom|uk|great britain|england|scotland|wales|northern ireland|united states|united states of america|usa|u\.s\.a\.|us|uruguay|uzbekistan|o'zbekiston|venezuela|vietnam|viet nam|việt nam|yemen|اليمن|zambia|zimbabwe)";
+
+/// A country name on the rest of this line or the next one.
+fn country_after(after: &str) -> bool {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| Regex::new(&format!(r"(?:^|[^\p{{L}}]){COUNTRIES}(?:[^\p{{L}}]|$)")).expect("valid pattern"));
+    let mut win: String = after.lines().take(2).collect::<Vec<_>>().join(" ");
+    let mut cut = 80.min(win.len());
+    while !win.is_char_boundary(cut) {
+        cut += 1;
+    }
+    win.truncate(cut);
+    // "US" in capitals only, so the word "us" doesn't count
+    re.find_iter(&win).any(|m| !m.as_str().trim_matches(|c: char| !c.is_alphabetic()).eq("us"))
+}
+
+/// A country name right before the postcode: "Singapore 238823", "Singapore, 238823".
+fn country_before(before: &str) -> bool {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| Regex::new(&format!(r"(?:^|[^\p{{L}}]){COUNTRIES}[\s,\-–]*$")).expect("valid pattern"));
+    let line = before.rsplit('\n').next().unwrap_or("");
+    let mut cut = line.len().saturating_sub(60);
+    while !line.is_char_boundary(cut) {
+        cut += 1;
+    }
+    re.find(&line[cut..]).is_some_and(|m| !m.as_str().trim_matches(|c: char| !c.is_alphabetic()).eq("us"))
+}
+
+/// A line that is just a company or website name, as at the top of a signature ("Booking.com",
+/// "Wizz Air Hungary Ltd.", "Example B.V."). Not a line with a sentence on it.
+fn is_brand_line(line: &str) -> bool {
+    let l = line.trim();
+    let lower = l.to_lowercase();
+    let words = l.split_whitespace().count();
+    let domain = words == 1
+        && [".com", ".nl", ".net", ".org", ".eu", ".de", ".co.uk", ".io"].iter().any(|d| lower.ends_with(d))
+        && !lower.contains('@');
+    let company = words <= 5 && [" b.v.", " bv", " n.v.", " ltd", " ltd.", " gmbh", " inc.", " s.a.", " s.r.l.", " plc"].iter().any(|w| lower.ends_with(w));
+    domain || company
 }
 
 /// Whether the text just before ends with the day and month of a date ("07/06/", "28-02-",
@@ -743,6 +1044,8 @@ pub struct GroupPlatform {
 #[derive(Debug, Clone, Serialize)]
 pub struct FindingsPage {
     pub total: i64,
+    /// How many of `total` are someone else's (they come last in the list).
+    pub theirs: i64,
     pub offset: i64,
     pub items: Vec<FindingView>,
 }
@@ -981,10 +1284,10 @@ impl Store {
         let keep = "(?2 IS NULL OR id = ?2) AND (?6 = 0 OR rn = 1)";
         let group = q.group as i64;
         let (lim, off) = (limit.clamp(1, 1000), offset.max(0));
-        let total: i64 = c.query_row(
-            &format!("{base} SELECT COUNT(*) FROM base WHERE {keep} AND ?3 = ?3 AND ?4 = ?4"),
+        let (total, theirs): (i64, i64) = c.query_row(
+            &format!("{base} SELECT COUNT(*), COALESCE(SUM(theirs), 0) FROM base WHERE {keep} AND ?3 = ?3 AND ?4 = ?4"),
             params![q.kind, q.only_id, 0, 0, q.platform, group, q.same_as],
-            |r| r.get(0),
+            |r| Ok((r.get(0)?, r.get(1)?)),
         )?;
         let mut stmt = c.prepare_cached(&format!(
             "{base} SELECT id, message_id, channel_id, cname, platform, ts, kind, start_byte, end_byte, content, status, link,
@@ -1047,7 +1350,7 @@ impl Store {
                 theirs,
             });
         }
-        Ok(FindingsPage { total, offset, items })
+        Ok(FindingsPage { total, theirs, offset, items })
     }
 
     /// Every finding with the same value as `finding_id`, within one status list.

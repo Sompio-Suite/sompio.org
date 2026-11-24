@@ -56,7 +56,7 @@ export interface MessageView {
   link: string | null;
   file_path: string | null;
 }
-export interface Page<T> { total: number; offset: number; items: T[] }
+export interface Page<T> { total: number; offset: number; items: T[]; /** Findings lists: how many at the end are someone else's */ theirs?: number }
 export interface SourceView { platform: Platform; label: string; origin: string; imported_at: number; channels: number; messages: number }
 export interface Stats {
   messages: number; channels: number; servers: number; dms: number; group_dms: number; files: number;

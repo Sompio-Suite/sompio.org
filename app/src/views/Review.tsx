@@ -124,9 +124,17 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
   const scanned = scan?.scanned_at_ms != null;
   const groupList = grouped && !sameAs;
   const listKey = scanned ? `${tab}|${kind}|${platform}|${revealAll}|${groupList}|${sameAs?.id}|${listVersion}` : null;
-  const { total, items, ensure } = usePaged<FindingView>(listKey, (o, l) =>
+  const { total, items, ensure, theirs } = usePaged<FindingView>(listKey, (o, l) =>
     api.findings(kind, platform, tab, o, l, revealAll, groupList, sameAs?.id ?? null),
   );
+  // Someone else's findings come last, under their own heading, folded away until opened.
+  const [showTheirs, setShowTheirs] = useState(false);
+  const mine = (total ?? 0) - theirs;
+  const theirsOpen = showTheirs || mine === 0;
+  const hasHead = theirs > 0;
+  const reachable = theirsOpen ? (total ?? 0) : mine;
+  const toRow = (i: number) => (hasHead && i >= mine ? i + 1 : i);
+  const toItem = (r: number) => (hasHead && r >= mine ? (r === mine ? -1 : r - 1) : r);
   useEffect(() => {
     setSelected(new Map());
     setAnchor(null);
@@ -146,8 +154,8 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
   }, [scan, kind]);
 
   useEffect(() => {
-    if (total != null) setFocus((f) => Math.max(0, Math.min(f, total - 1)));
-  }, [total]);
+    if (total != null) setFocus((f) => Math.max(0, Math.min(f, reachable - 1)));
+  }, [total, reachable]);
   useEffect(() => {
     setConfirmRecycle(false);
     setConfirmGroupDelete(null);
@@ -155,14 +163,17 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
 
   const parentRef = useRef<HTMLDivElement>(null);
   const v = useVirtualizer({
-    count: total ?? 0,
+    count: reachable + (hasHead ? 1 : 0),
     getScrollElement: () => parentRef.current,
     estimateSize: () => 30,
     overscan: 8,
   });
   const virtualItems = v.getVirtualItems();
   useEffect(() => {
-    virtualItems.forEach((r) => !items[r.index] && ensure(r.index));
+    virtualItems.forEach((r) => {
+      const i = toItem(r.index);
+      if (i >= 0 && !items[i]) ensure(i);
+    });
   }, [virtualItems, items, ensure]);
 
   const reload = () => setListVersion((x) => x + 1);
@@ -426,9 +437,9 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
       const f = items[focus];
       const move = (d: number) => {
         e.preventDefault();
-        const next = Math.max(0, Math.min(total - 1, focus + d));
+        const next = Math.max(0, Math.min(reachable - 1, focus + d));
         setFocus(next);
-        v.scrollToIndex(next, { align: "auto" });
+        v.scrollToIndex(toRow(next), { align: "auto" });
       };
       switch (e.key) {
         case "j": case "ArrowDown": return move(1);
@@ -627,7 +638,20 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
               {!scanned && !scanning && <div className="empty">Not checked yet. Click Check again.</div>}
               <div style={{ height: v.getTotalSize(), position: "relative" }}>
                 {virtualItems.map((row) => {
-                  const f = items[row.index];
+                  const i = toItem(row.index);
+                  if (i < 0) {
+                    return (
+                      <div key={row.key} style={{ position: "absolute", top: 0, left: 0, right: 0, height: row.size, transform: `translateY(${row.start}px)` }}>
+                        <button className="xc-group-head" aria-expanded={theirsOpen} disabled={mine === 0} onClick={() => setShowTheirs(!theirsOpen)} title={THEIRS_TITLE}>
+                          <span className="chev" aria-hidden>{theirsOpen ? "▾" : "▸"}</span>
+                          <strong>In emails from others</strong>
+                          <span className="grp-count">{n(theirs)}</span>
+                          <span className="small muted">Replies, forwards and the people you wrote to. Usually less urgent.</span>
+                        </button>
+                      </div>
+                    );
+                  }
+                  const f = items[i];
                   const shown = f && revealed.get(f.id);
                   const t = shown ? { ...f!, ...pickText(shown) } : f;
                   return (
@@ -636,20 +660,20 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                         <div
                           id={`f-${t.id}`}
                           role="option"
-                          aria-selected={row.index === focus}
-                          className={`xc-row${row.index === focus ? " active" : ""}${selected.has(t.id) ? " picked" : ""}${t.status ? " decided" : ""}${t.theirs ? " theirs" : ""}`}
+                          aria-selected={i === focus}
+                          className={`xc-row${i === focus ? " active" : ""}${selected.has(t.id) ? " picked" : ""}${t.status ? " decided" : ""}`}
                           onClick={(e) => {
-                            if (e.shiftKey || e.ctrlKey || e.metaKey) toggleSelect(t, row.index, e.shiftKey);
-                            setFocus(row.index);
+                            if (e.shiftKey || e.ctrlKey || e.metaKey) toggleSelect(t, i, e.shiftKey);
+                            setFocus(i);
                           }}
                           onDoubleClick={() => goTo(t)}
                         >
                           <span>
                             <input type="checkbox" aria-label="Select" checked={selected.has(t.id)} onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => toggleSelect(t, row.index, (e.nativeEvent as MouseEvent).shiftKey)} />
+                              onChange={(e) => toggleSelect(t, i, (e.nativeEvent as MouseEvent).shiftKey)} />
                           </span>
                           <span className="c-type" title={t.theirs ? THEIRS_TITLE : undefined}>
-                            <span className={t.theirs ? "sev sev-theirs" : `sev sev-${t.severity}`} aria-label={t.theirs ? "Someone else's" : severityLabel(t.severity)} />{t.label}
+                            <span className={`sev sev-${t.severity}`} aria-label={t.theirs ? `${severityLabel(t.severity)}, someone else's` : severityLabel(t.severity)} />{t.label}
                           </span>
                           <span className="c-found">
                             {t.masked ? <span className="redact">{t.matched}</span> : <strong>{t.matched}</strong>}

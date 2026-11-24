@@ -56,6 +56,17 @@ const LEAKS: &[&str] = &[
     "call my US number +1 415 555 0132 when you land",
     "my UK mobile is +44 7700 900123",
     "in Germany I'm on +49 30 901820",
+    // Addresses from around the world (all made up)
+    "send the parcel to 742 Maple Avenue, Springfield, IL 62704",
+    "my London flat: 18 Elm Grove, London N7 9QP",
+    "Berlin address for the contract: Lindenstraße 41\n10969 Berlin",
+    "nowy adres: ul. Polna 14, 00-635 Warszawa",
+    "post it to P.O. Box 48213, Nairobi, Kenya",
+    "my parents are at 27 Rose Street, Rondebosch, Cape Town, 7700",
+    "office: 4th floor, 22 MG Road, Bengaluru 560001",
+    "Tokyo apartment: 〒150-0042 渋谷区宇田川町3丁目12番5号",
+    "entrega em Rua das Flores 210, 01310-930 São Paulo",
+    "mi dirección: Av. Reforma 350, Col. Juárez, 06600 Ciudad de México",
 ];
 
 struct Rng(u64, usize);

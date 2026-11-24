@@ -1435,12 +1435,12 @@ strong, b, th, dt { font-weight: 600; }
 
 /* Findings in someone else's words (a quoted email, a recipient's address): blue, after your own */
 .theirs-chip { font-size: var(--t-xs); font-weight: 600; color: #0b5cad; background: #e6f0fb; border-radius: 999px; padding: 0.02rem 0.5rem; white-space: nowrap; flex: none; }
-.xc-row.theirs { background: #f4f8fd; }
-.xc-row.theirs:hover { background: var(--hover); }
-.xc-row.theirs.active { background: var(--select); }
-.sev.sev-theirs { background: #4a8fd6; }
-.xc-row.theirs { color: #1f4f80; }
-.xc-row.theirs mark { background: #dcebfa; }
+.xc-group-head { display: flex; align-items: center; gap: 0.5rem; width: 100%; height: 100%; padding: 0 0.75rem; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--sunken); font: inherit; font-size: var(--t-sm); text-align: left; cursor: pointer; color: inherit; }
+.xc-group-head:hover:not(:disabled) { background: var(--hover); }
+.xc-group-head:disabled { cursor: default; }
+.xc-group-head .chev { width: 0.8rem; color: var(--ink-3); }
+.xc-group-head .grp-count { font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.xc-group-head .small { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theirs-note { color: #0b4f94; background: #eef5fc; border-left: 3px solid #5b9ad8; padding: 0.45rem 0.7rem; border-radius: 4px; margin: 0.6rem 0; }
 
 /* Browser setup: loading the extension by hand, folded away under the store steps */

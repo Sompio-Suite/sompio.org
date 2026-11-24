@@ -11,6 +11,7 @@ export function usePaged<T>(key: string | null, fetchPage: (offset: number, limi
   const [total, setTotal] = useState<number | null>(null);
   const [items, setItems] = useState<(T | undefined)[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [theirs, setTheirs] = useState(0);
   const requested = useRef(new Set<number>());
   const generation = useRef(0);
   const fetchRef = useRef(fetchPage);
@@ -23,6 +24,7 @@ export function usePaged<T>(key: string | null, fetchPage: (offset: number, limi
       .then((res) => {
         if (gen !== generation.current) return; // a newer query replaced this one
         setTotal(res.total);
+        setTheirs(res.theirs ?? 0);
         setItems((prev) => {
           const next = prev.length === res.total ? prev.slice() : Array.from({ length: res.total }, (_, i) => prev[i]);
           res.items.forEach((item, i) => (next[res.offset + i] = item));
@@ -40,11 +42,12 @@ export function usePaged<T>(key: string | null, fetchPage: (offset: number, limi
     requested.current = new Set();
     setItems([]);
     setTotal(null);
+    setTheirs(0);
     setError(null);
     if (key !== null) load(0, generation.current);
   }, [key, load]);
 
   const ensure = useCallback((index: number) => load(Math.floor(index / PAGE_SIZE), generation.current), [load]);
 
-  return { total, items, ensure, error };
+  return { total, items, ensure, error, theirs };
 }
