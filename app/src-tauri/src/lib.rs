@@ -556,7 +556,13 @@ async fn run_scan(app: AppHandle, state: State<'_, AppState>, watch_terms: Vec<S
 
 #[tauri::command]
 async fn scan_summary(state: State<'_, AppState>) -> CmdResult<ScanSummary> {
-    with_store(state.db()?, |s| s.scan_summary()).await
+    // After an update that improves detection, data the user already checked is checked again once,
+    // so findings the old version got wrong go away by themselves.
+    with_store(state.db()?, |s| {
+        sompio_clean::recheck_if_outdated(s)?;
+        s.scan_summary()
+    })
+    .await
 }
 
 #[tauri::command]

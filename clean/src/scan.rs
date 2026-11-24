@@ -372,6 +372,9 @@ fn validate(kind: Kind, text: &str, start: usize, end: usize) -> bool {
                 && !after.starts_with(|c: char| c.is_alphanumeric())
                 // The year of a date ("07/06/2018 MC") or part of a longer number or code.
                 && !matches!(prev, Some('/' | '-' | '.' | '#' | '_') | Some('0'..='9'))
+                // Also when something sits between the day and month and the year, as in the
+                // table cells of HTML emails ("07/06/ | 2018 MC", or a line break in between).
+                && !date_part_before(before)
                 && !next.is_some_and(|c| c.is_ascii_digit())
                 // A company's own address, as in an email footer ("Booking.com B.V., ... 1012 SJ").
                 && ![" b.v.", " bv,", " bv ", " n.v.", " ltd", " gmbh", " inc.", "kvk", "chamber of commerce", "registered office", "statutaire zetel"]
@@ -606,6 +609,45 @@ fn detect_message(scanner: &Scanner, platform: &str, content: &str) -> Vec<Detec
     found
 }
 
+/// Raised whenever detection changes in a way that alters findings. Stored data checked with an
+/// older version is checked again once, automatically: the user already chose to check it.
+pub const DETECTION_VERSION: u32 = 2;
+
+/// Checks stored data again if it was last checked by an older version of the detection. Nothing
+/// new is read from the user's files or accounts; their decisions on findings are kept. Returns
+/// whether it ran.
+pub fn recheck_if_outdated(store: &mut Store) -> Result<bool> {
+    let checked_before = store.get_meta("scanned_at_ms")?.is_some();
+    let version: u32 = store.get_meta("detection_version")?.and_then(|v| v.parse().ok()).unwrap_or(0);
+    if !checked_before || version >= DETECTION_VERSION {
+        return Ok(false);
+    }
+    let opts = ScanOptions { watch_terms: store.watch_terms()? };
+    run_scan(store, &opts, &mut |_, _| {})?;
+    Ok(true)
+}
+
+/// Whether the text just before ends with the day and month of a date ("07/06/", "28-02-",
+/// "28.02."), ignoring whatever separates them from what follows: spaces, line breaks,
+/// invisible characters or table separators.
+fn date_part_before(before: &str) -> bool {
+    static DATE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let re = DATE.get_or_init(|| Regex::new(r"(?:^|[^0-9])[0-9]{1,2}[/.\-][0-9]{1,2}[/.\-]$").expect("valid pattern"));
+    let mut cut = before.len().saturating_sub(24);
+    while !before.is_char_boundary(cut) {
+        cut += 1;
+    }
+    // Keep only digits and date separators, with a run of separators counted once ("07/06/ </td>").
+    let mut kept = String::new();
+    for c in before[cut..].chars().filter(|c| c.is_ascii_digit() || matches!(c, '/' | '.' | '-')) {
+        let repeat = !c.is_ascii_digit() && kept.ends_with(|p: char| !p.is_ascii_digit());
+        if !repeat {
+            kept.push(c);
+        }
+    }
+    re.is_match(&kept)
+}
+
 /// Whether a finding at `start` is in text someone else wrote or that's about someone else: in a sent
 /// email, the recipients on the "To:" line and the quoted or forwarded email under your own words.
 pub(crate) fn is_theirs(platform: &str, content: &str, start: usize) -> bool {
@@ -753,6 +795,7 @@ pub fn run_scan(
     }
     tx.commit()?;
     store.set_meta("scanned_at_ms", &crate::now_ms().to_string())?;
+    store.set_meta("detection_version", &DETECTION_VERSION.to_string())?;
     store.scan_summary()
 }
 

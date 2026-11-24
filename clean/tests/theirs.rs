@@ -42,3 +42,18 @@ fn sample_data_shows_someone_elses_words() {
     let summary = run_scan(&mut store, &ScanOptions::default(), &mut |_, _| {}).unwrap();
     assert!(summary.theirs >= 3, "{}", summary.theirs);
 }
+
+#[test]
+fn stored_data_is_checked_again_after_detection_changes() {
+    use sompio_clean::{recheck_if_outdated, DETECTION_VERSION};
+    let mut store = Store::open_in_memory().unwrap();
+    // Nothing checked yet: nothing to redo.
+    assert!(!recheck_if_outdated(&mut store).unwrap());
+    sompio_clean::load_demo(&mut store).unwrap();
+    run_scan(&mut store, &ScanOptions::default(), &mut |_, _| {}).unwrap();
+    assert!(!recheck_if_outdated(&mut store).unwrap(), "fresh scan is current");
+    // An install that last checked with an older version (or before versions were stored).
+    store.set_meta("detection_version", &(DETECTION_VERSION - 1).to_string()).unwrap();
+    assert!(recheck_if_outdated(&mut store).unwrap());
+    assert!(!recheck_if_outdated(&mut store).unwrap(), "only once");
+}

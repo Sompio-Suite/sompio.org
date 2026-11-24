@@ -139,3 +139,42 @@ fn postcodes_in_dates_codes_and_company_footers_are_skipped() {
     assert!(!has("Booking.com B.V. - Nieuwezijds Voorburgwal 162, 1012 SJ Amsterdam", Kind::Postcode));
     assert!(!has("Example Ltd, registered office: Keizersgracht 1, 1015 CJ Amsterdam", Kind::Postcode));
 }
+
+#[test]
+fn postcodes_after_a_date_split_over_two_lines_are_skipped() {
+    // Booking emails often wrap right after the day and month.
+    assert!(!has("Payment in selected currency 07/06/\n2018 MC 159082262 confirmed", Kind::Postcode));
+    assert!(!has("Payment amount 28/02/\r\n2017 VI 49.98 EUR", Kind::Postcode));
+    // A real address on its own line still counts.
+    assert!(has("Dorpsstraat 4\n2011 VA Haarlem", Kind::Postcode));
+}
+
+#[test]
+fn postcodes_after_a_date_with_anything_in_between_are_skipped() {
+    let cases = [
+        ("nbsp", "currency 07/06/\u{a0}2018 MC 159082262"),
+        ("thin", "currency 07/06/\u{2009}2018 MC 159082262"),
+        ("zwsp", "currency 07/06/\u{200b}2018 MC 159082262"),
+        ("nl-space", "currency 07/06/\n 2018 MC 159082262"),
+        ("nbsp-after", "currency 07/06/2018\u{a0}MC\u{a0}159082262"),
+        ("tab-cells", "currency\t07/06/\t2018 MC\t159082262"),
+        ("pipe", "07/06/ | 2018 MC | 159082262"),
+        ("ellipsis-row", "Payment amount 28/02/2017 VI 49.98 EUR"),
+        ("date-dash", "2017-02-28 2017 VI"),
+        ("dots", "Datum 28.02. 2017 VI"),
+        ("html-cells", "07/06/ </td><td> 2018 MC"),
+    ];
+    let mut hits = vec![];
+    for (n, t) in cases {
+        if has(t, Kind::Postcode) { hits.push(n); }
+    }
+    assert!(hits.is_empty(), "still matched: {hits:?}");
+}
+
+#[test]
+fn real_postcodes_after_numbers_still_count() {
+    // House numbers, phone numbers and house-number ranges right before a postcode.
+    assert!(has("Kerkstraat 12-14, 1017 GL Amsterdam", Kind::Postcode));
+    assert!(has("Tel 020-1234567, Damrak 1\n1012 LG Amsterdam", Kind::Postcode));
+    assert!(has("Laan 3/2\n3511 AB Utrecht", Kind::Postcode));
+}

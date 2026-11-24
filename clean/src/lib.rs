@@ -23,7 +23,7 @@ pub use import::{gmail_link, import_live, parse_sent_mail, SentMail, import_pack
 pub use pcscan::{is_image, photo_location, scan_folders, scan_folders_with, ImageReader, PcScanOptions};
 pub use query::{TextHit, ChannelView, MessageView, MessagesPage, SearchPage, Segment, SourceView, Stats, YearCount};
 pub use scan::{FindingsFilter, GroupInfo, GroupPlatform, 
-    run_scan, Detection, FindingView, FindingsPage, Kind, KindCount, ScanOptions, ScanSummary, Scanner, StatusFilter,
+    recheck_if_outdated, run_scan, Detection, FindingView, DETECTION_VERSION, FindingsPage, Kind, KindCount, ScanOptions, ScanSummary, Scanner, StatusFilter,
 };
 
 /// Discord IDs ("snowflakes") contain their own creation time.
