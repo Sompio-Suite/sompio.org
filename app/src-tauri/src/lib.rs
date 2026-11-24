@@ -51,6 +51,16 @@ fn update_token() -> &'static str {
     option_env!("SOMPIO_UPDATE_TOKEN").unwrap_or("")
 }
 
+/// Light or dark title bars for every Sompio window, or the computer's own setting.
+#[tauri::command]
+fn set_app_theme(app: tauri::AppHandle, theme: String) {
+    app.set_theme(match theme.as_str() {
+        "dark" => Some(tauri::Theme::Dark),
+        "light" => Some(tauri::Theme::Light),
+        _ => None,
+    });
+}
+
 // The Sompio Lock. Argon2 takes about half a second on purpose, so these run off the UI thread.
 
 async fn with_vault<T, F>(state: &State<'_, AppState>, f: F) -> CmdResult<T>
@@ -855,6 +865,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            set_app_theme,
             browser::browser_answer,
             browser::browser_clients,
             browser::browser_forget,

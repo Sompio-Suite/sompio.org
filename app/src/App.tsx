@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, listen, openExternal, type BrowserPairAsk, type HealthReport, type KindKey, type LicenceStatus, type LockStatus, type ScanSummary, type TraceData, type VaultInTrace } from "./api";
 import { n } from "./format";
 import Icon, { type IconName } from "./Icon";
@@ -24,6 +24,7 @@ import Samples from "./views/Samples";
 import ReportBug from "./views/ReportBug";
 import { BUY_URL, accessText, passEnding } from "./licence";
 import { date } from "./format";
+import { setThemeChoice, themeChoice, type ThemeChoice } from "./theme";
 import { autoCheckEnabled, checkForUpdate, dueForCheck, type UpdateInfo } from "./updates";
 
 /** Suite pages, then Clean's pages. */
@@ -94,6 +95,9 @@ export default function App() {
   const [installing, setInstalling] = useState<number | null | "error">(null);
   // A new version found by the automatic check pops up once; "Later" keeps it in the sidebar only
   const [updatePopup, setUpdatePopup] = useState(false);
+  // The version the person said "Later" to: not shown again until the next start or a newer version.
+  const laterFor = useRef<string | null>(null);
+  const [theme, setTheme] = useState<ThemeChoice>(themeChoice);
   const [menu, setMenu] = useState<"settings" | null>(null);
   // Close the small menus on a click elsewhere or Escape
   useEffect(() => {
@@ -105,20 +109,21 @@ export default function App() {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [menu]);
-  // Like KeePassXC: look for an update every time Sompio opens, then again every few hours while it
-  // stays open. "Later" hides the notice until the next start; it comes back then.
+  // Look for an update every time Sompio opens, then every two hours while it stays open. A check
+  // that failed (no internet yet) is tried again every 10 minutes. "Later" hides the notice until
+  // the next start; it comes back then.
   useEffect(() => {
     const run = (always: boolean) => {
       if (autoCheckEnabled() && (always || dueForCheck()))
         checkForUpdate()
           .then((u) => {
             setUpdate(u);
-            if (u) setUpdatePopup(true);
+            if (u && u.version !== laterFor.current) setUpdatePopup(true);
           })
           .catch(() => {});
     };
     run(true);
-    const t = window.setInterval(() => run(false), 3_600_000);
+    const t = window.setInterval(() => run(false), 600_000);
     return () => window.clearInterval(t);
   }, []);
   const installUpdate = async () => {
@@ -357,6 +362,16 @@ export default function App() {
                 <button role="menuitem" onClick={() => { setMenu(null); setView("security"); }}><Icon name="lock" size={16} />Security and updates</button>
                 <button role="menuitem" onClick={() => { setMenu(null); setView("licences"); }}><Icon name="ticket" size={16} />Activate a product</button>
                 <button role="menuitem" onClick={() => { setMenu(null); setView("samples"); }}><Icon name="folder" size={16} />Sample data for testing</button>
+                <div className="menu-theme">
+                  <span className="small muted" id="theme-label">Appearance</span>
+                  <div className="segmented" role="radiogroup" aria-labelledby="theme-label">
+                    {([["light", "Light"], ["dark", "Dark"], ["system", "System"]] as [ThemeChoice, string][]).map(([id, label]) => (
+                      <button key={id} role="radio" aria-checked={theme === id} aria-selected={theme === id}
+                        title={id === "system" ? "Match your computer's setting" : undefined}
+                        onClick={() => { setTheme(id); setThemeChoice(id); }}>{label}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -455,7 +470,7 @@ export default function App() {
           <div className="update-card-head">
             <Icon name="refresh" size={16} />
             <strong id="update-title">Sompio {update.version} is available</strong>
-            <button className="quiet x" aria-label="Later" disabled={typeof installing === "number"} onClick={() => setUpdatePopup(false)}>×</button>
+            <button className="quiet x" aria-label="Later" disabled={typeof installing === "number"} onClick={() => { laterFor.current = update.version; setUpdatePopup(false); }}>×</button>
           </div>
           {update.notes.trim() && (
             <details className="update-notes-fold">
@@ -471,7 +486,7 @@ export default function App() {
             <button className="primary" disabled={typeof installing === "number"} onClick={installUpdate}>
               {typeof installing === "number" ? "Updating…" : "Update now"}
             </button>
-            <button className="quiet" disabled={typeof installing === "number"} onClick={() => setUpdatePopup(false)}>Later</button>
+            <button className="quiet" disabled={typeof installing === "number"} onClick={() => { laterFor.current = update.version; setUpdatePopup(false); }}>Later</button>
           </div>
         </div>
       )}

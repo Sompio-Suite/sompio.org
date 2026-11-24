@@ -43,11 +43,6 @@ export async function currentVersion(): Promise<string> {
  * is sent beyond what any download sends (your IP address). Returns null when up to date.
  */
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
-  try {
-    localStorage.setItem(LAST_CHECK, String(Date.now()));
-  } catch {
-    /* fine */
-  }
   if (!inDesktopApp) {
     // Browser preview: pretend a new version exists so the screens can be seen.
     return {
@@ -67,6 +62,12 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
   // sompio.org only answers Sompio apps: the code is built into published versions
   const token = await invoke<string>("update_token").catch(() => "");
   const update = await check({ headers: { "X-Sompio-Update": token } });
+  // Only a check that reached sompio.org counts: after a failed one (offline at start) it tries again soon.
+  try {
+    localStorage.setItem(LAST_CHECK, String(Date.now()));
+  } catch {
+    /* fine */
+  }
   if (!update) return null;
   return {
     version: update.version,
@@ -88,7 +89,7 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
 }
 
 /** True if the last automatic check was long enough ago. */
-export function dueForCheck(hours = 6): boolean {
+export function dueForCheck(hours = 2): boolean {
   try {
     const last = Number(localStorage.getItem(LAST_CHECK) || 0);
     return Date.now() - last > hours * 3_600_000;

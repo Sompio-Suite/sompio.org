@@ -1,1 +1,2 @@
-Trace now finds addresses and postcodes from countries all over the world, not just the Netherlands, including P.O. boxes and addresses in non-Latin scripts. A company's own address in an email signature is no longer flagged as yours. Findings in emails from others are listed last, under their own heading. Data you already checked is checked again by itself after the update.
+Dark mode: choose Light, Dark or System under Appearance in the settings menu (the gear, top right).
+Sompio now looks for updates every two hours while it's open, and tries again soon if a check failed because the computer wasn't online yet.

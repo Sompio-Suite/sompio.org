@@ -7,6 +7,11 @@ import Popup from "./views/Popup";
 import AutoTypeChooser from "./views/AutoTypeChooser";
 import { api } from "./api";
 import Recover from "./Recover";
+import { applyTheme, watchTheme } from "./theme";
+
+// Before the first paint, so a dark window never flashes white.
+applyTheme();
+watchTheme();
 
 // Right-click menu off outside development: it only offers "Reload" and "Inspect".
 if (import.meta.env.PROD) window.addEventListener("contextmenu", (e) => e.preventDefault());
