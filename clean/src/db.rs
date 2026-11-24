@@ -185,12 +185,36 @@ impl Store {
             store.conn.execute_batch("ALTER TABLE findings ADD COLUMN theirs INTEGER NOT NULL DEFAULT 0")?;
         }
         store.conn.execute_batch("CREATE INDEX IF NOT EXISTS findings_fp ON findings(kind, fp)")?;
+        store.repair_gmail_links()?;
         Ok(store)
     }
 
     pub fn has_data(&self) -> Result<bool> {
         let n: i64 = self.conn.query_row("SELECT COUNT(*) FROM messages", [], |r| r.get(0))?;
         Ok(n > 0)
+    }
+
+    /// Once: rewrites Gmail links saved before 2.3.3, which broke on Message-IDs with "+" in them.
+    fn repair_gmail_links(&mut self) -> Result<()> {
+        if self.get_meta("gmail_links_v2")?.is_some() {
+            return Ok(());
+        }
+        let tx = self.conn.transaction()?;
+        {
+            let mut read = tx.prepare("SELECT id, link FROM messages WHERE link LIKE 'https://mail.google.com/%'")?;
+            let rows: Vec<(i64, String)> = read.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?.collect::<rusqlite::Result<_>>()?;
+            let mut write = tx.prepare("UPDATE messages SET link = ?1 WHERE id = ?2")?;
+            for (id, link) in rows {
+                if let Some(fixed) = crate::import::repair_gmail_link(&link) {
+                    if fixed != link {
+                        write.execute(rusqlite::params![fixed, id])?;
+                    }
+                }
+            }
+        }
+        tx.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('gmail_links_v2', '1')", [])?;
+        tx.commit()?;
+        Ok(())
     }
 
     pub fn get_meta(&self, key: &str) -> Result<Option<String>> {

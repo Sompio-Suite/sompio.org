@@ -57,3 +57,16 @@ fn stored_data_is_checked_again_after_detection_changes() {
     assert!(recheck_if_outdated(&mut store).unwrap());
     assert!(!recheck_if_outdated(&mut store).unwrap(), "only once");
 }
+
+#[test]
+fn gmail_links_survive_plus_signs_and_old_links_are_repaired() {
+    use sompio_clean::{gmail_link, repair_gmail_link};
+    let link = gmail_link("<CAJ+aaeeyzq=x/y@mail.gmail.com>");
+    assert_eq!(link, "https://mail.google.com/mail/u/0/#search/rfc822msgid%3ACAJ%2Baaeeyzq%3Dx%2Fy%40mail.gmail.com");
+    // A link saved by 2.3.2 or older: only "@" was encoded.
+    let old = "https://mail.google.com/mail/u/0/#search/rfc822msgid%3ACAJ+aaeeyzq=x/y%40mail.gmail.com";
+    assert_eq!(repair_gmail_link(old).as_deref(), Some(link.as_str()));
+    // Repairing a correct link changes nothing; other links are left alone.
+    assert_eq!(repair_gmail_link(&link).as_deref(), Some(link.as_str()));
+    assert_eq!(repair_gmail_link("https://discord.com/channels/1/2/3"), None);
+}

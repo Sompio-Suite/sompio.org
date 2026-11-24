@@ -1,1 +1,1 @@
-Trace no longer mistakes the year of a date for a postcode when something sits between them, such as a line break or a table cell in an email. After an update that improves detection, Sompio checks the data you already checked again by itself, once, and keeps your decisions.
+Opening a finding in Gmail now shows the right email again: links broke for emails whose ID contains a plus sign. Links Sompio saved earlier are repaired by themselves. Also includes 2.3.3: dates are no longer read as postcodes, and data you already checked is checked again by itself after an update.

@@ -385,7 +385,40 @@ pub fn parse_sent_mail(raw: &[u8]) -> Option<SentMail> {
 
 /// A Gmail search link that opens one message by its Message-ID.
 pub fn gmail_link(message_id: &str) -> String {
-    format!("https://mail.google.com/mail/u/0/#search/rfc822msgid%3A{}", message_id.replace('@', "%40"))
+    // Every character but letters, digits and "-._~" is encoded: Message-IDs often hold "+", "="
+    // or "/", and in a Gmail search link a bare "+" means a space, which splits the search in two.
+    let mut id = String::new();
+    for b in message_id.trim().trim_start_matches('<').trim_end_matches('>').bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') {
+            id.push(b as char);
+        } else {
+            id.push_str(&format!("%{b:02X}"));
+        }
+    }
+    format!("{GMAIL_SEARCH}{id}")
+}
+
+const GMAIL_SEARCH: &str = "https://mail.google.com/mail/u/0/#search/rfc822msgid%3A";
+
+/// Rebuilds a Gmail link saved by an earlier version, which left "+" and other characters bare.
+/// Returns None for links that aren't Gmail links. Running it on a correct link changes nothing.
+pub fn repair_gmail_link(link: &str) -> Option<String> {
+    let encoded = link.strip_prefix(GMAIL_SEARCH)?;
+    // Undo the encoding that was there ("%40"), keeping everything else as it was.
+    let bytes = encoded.as_bytes();
+    let mut raw = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() && bytes[i + 1].is_ascii_hexdigit() && bytes[i + 2].is_ascii_hexdigit() {
+            let hex = |c: u8| (c as char).to_digit(16).unwrap_or(0) as u8;
+            raw.push(hex(bytes[i + 1]) * 16 + hex(bytes[i + 2]));
+            i += 3;
+            continue;
+        }
+        raw.push(bytes[i]);
+        i += 1;
+    }
+    Some(gmail_link(&String::from_utf8_lossy(&raw)))
 }
 
 /// What importers may need to know beyond the export itself.

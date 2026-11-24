@@ -19,7 +19,7 @@ pub mod trace;
 
 pub use db::Store;
 pub use demo::load_demo;
-pub use import::{gmail_link, import_live, parse_sent_mail, SentMail, import_package, platform_label, ImportProgress, ImportSummary, LiveChannel, LiveMessage};
+pub use import::{gmail_link, import_live, repair_gmail_link, parse_sent_mail, SentMail, import_package, platform_label, ImportProgress, ImportSummary, LiveChannel, LiveMessage};
 pub use pcscan::{is_image, photo_location, scan_folders, scan_folders_with, ImageReader, PcScanOptions};
 pub use query::{TextHit, ChannelView, MessageView, MessagesPage, SearchPage, Segment, SourceView, Stats, YearCount};
 pub use scan::{FindingsFilter, GroupInfo, GroupPlatform, 
