@@ -1,5 +1,2 @@
-Trace is now one screen. Everything you found is listed once, with how many emails or messages and conversations it's in, so the same thing quoted through a whole email conversation no longer fills the list. Open any conversation from the details.
-Gmail links now open the right email. Sync your mailbox once after updating to get the new links.
-Add a source now shows every service with the right next step: connect it, add its file, or ask it for your data.
-Things you've dealt with leave the list; the counter at the bottom left shows them. Trace opens where you left off.
-Services are shown with their logos.
+Pages now use the full width of the window.
+In Trace, drag the line between the list and the details to make either one bigger. Double-click it to reset.

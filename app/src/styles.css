@@ -1605,3 +1605,8 @@ button.progress-link:hover { background: var(--hover); }
 .conv-row.done .conv-text strong { color: var(--ink-2); font-weight: 500; }
 .done-mark { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--ok-ink); font-weight: 600; }
 .back-btn { margin-left: auto; }
+
+/* The line between the list and the details: drag it to resize */
+.xc-split { cursor: row-resize; background: var(--line); position: relative; touch-action: none; }
+.xc-split::after { content: ""; position: absolute; left: 50%; top: 2px; width: 36px; height: 3px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
+.xc-split:hover, .xc-split:focus-visible { background: var(--select-line); outline: none; }

@@ -101,6 +101,48 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen, onGo }
   const [mailAccount, setMailAccount] = useState<string | null>(null);
   const [trace, setTrace] = useState<TraceData | null>(null);
   const [allConvs, setAllConvs] = useState(false);
+  // The details panel's height, dragged by the line above it and remembered.
+  const mainRef = useRef<HTMLDivElement>(null);
+  const [detailH, setDetailH] = useState<number | null>(() => {
+    try {
+      const v = Number(localStorage.getItem("sompio.review.detailH"));
+      return v > 0 ? v : null;
+    } catch {
+      return null;
+    }
+  });
+  const clampDetail = (h: number) => {
+    const total = mainRef.current?.clientHeight ?? 800;
+    return Math.round(Math.max(150, Math.min(total - 130, h)));
+  };
+  const saveDetailH = (h: number | null) => {
+    setDetailH(h);
+    try {
+      if (h == null) localStorage.removeItem("sompio.review.detailH");
+      else localStorage.setItem("sompio.review.detailH", String(h));
+    } catch {
+      /* fine */
+    }
+  };
+  const startDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const box = mainRef.current?.getBoundingClientRect();
+    if (!box) return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    let last = detailH;
+    const move = (ev: PointerEvent) => {
+      last = clampDetail(box.bottom - ev.clientY);
+      setDetailH(last);
+    };
+    const up = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      saveDetailH(last);
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+  };
   const [sameAs, setSameAs] = useState<FindingView | null>(null);
   const [selected, setSelected] = useState<Map<number, FindingView>>(new Map());
   const [anchor, setAnchor] = useState<number | null>(null);
@@ -660,7 +702,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen, onGo }
           )}
         </aside>
 
-        <div className="xc-main">
+        <div className="xc-main" ref={mainRef} style={{ gridTemplateRows: `minmax(120px, 1fr) 7px ${detailH ? `${detailH}px` : "minmax(190px, 40%)"}` }}>
           <div className="xc-table">
             <div className="xc-thead" role="row">
               <span />
@@ -736,6 +778,16 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen, onGo }
               </div>
             </div>
           </div>
+
+          <div className="xc-split" role="separator" aria-orientation="horizontal" aria-label="Drag to make the details taller or shorter"
+            title="Drag to resize. Double-click to reset." tabIndex={0}
+            aria-valuenow={detailH ?? undefined} onPointerDown={startDrag} onDoubleClick={() => saveDetailH(null)}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+              e.preventDefault();
+              const now = detailH ?? mainRef.current?.querySelector<HTMLElement>(".xc-preview")?.offsetHeight ?? 300;
+              saveDetailH(clampDetail(now + (e.key === "ArrowUp" ? 32 : -32)));
+            }} />
 
           <div className="xc-preview detail">
             {current ? (
