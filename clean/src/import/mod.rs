@@ -290,11 +290,26 @@ impl<'a> Writer<'a> {
         attachments: &str,
         link: Option<&str>,
     ) -> Result<()> {
+        self.message_in(ext_id, channel, ts, content, attachments, link, None)
+    }
+
+    /// Like `message`, for emails: also says which conversation it belongs to.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn message_in(
+        &mut self,
+        ext_id: &str,
+        channel: i64,
+        ts: i64,
+        content: &str,
+        attachments: &str,
+        link: Option<&str>,
+        thread: Option<&str>,
+    ) -> Result<()> {
         let uid = format!("{}:{}", self.platform, ext_id);
         let mut stmt = self.tx.prepare_cached(
-            "INSERT OR IGNORE INTO messages(uid, channel_id, ts, content, attachments, link) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR IGNORE INTO messages(uid, channel_id, ts, content, attachments, link, thread) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )?;
-        self.messages += stmt.execute((uid, channel, ts, content, attachments, link))?;
+        self.messages += stmt.execute((uid, channel, ts, content, attachments, link, thread))?;
         Ok(())
     }
 
@@ -400,6 +415,24 @@ pub fn gmail_link(message_id: &str) -> String {
 
 const GMAIL_SEARCH: &str = "https://mail.google.com/mail/u/0/#search/rfc822msgid%3A";
 
+/// Opens one Gmail message or conversation by Gmail's own ID, in the right account when someone is
+/// signed in to more than one. Searching by Message-ID (above) doesn't always find replies.
+pub fn gmail_open_link(account: &str, gmail_id: u64) -> String {
+    let mut who = String::new();
+    for b in account.trim().bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') {
+            who.push(b as char);
+        } else {
+            who.push_str(&format!("%{b:02X}"));
+        }
+    }
+    if who.is_empty() {
+        format!("https://mail.google.com/mail/u/0/#all/{gmail_id:x}")
+    } else {
+        format!("https://mail.google.com/mail/?authuser={who}#all/{gmail_id:x}")
+    }
+}
+
 /// Rebuilds a Gmail link saved by an earlier version, which left "+" and other characters bare.
 /// Returns None for links that aren't Gmail links. Running it on a correct link changes nothing.
 pub fn repair_gmail_link(link: &str) -> Option<String> {
@@ -502,6 +535,8 @@ pub struct LiveMessage {
     pub ts: i64,
     pub content: String,
     pub link: Option<String>,
+    /// For emails: the conversation it belongs to.
+    pub thread: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -521,7 +556,7 @@ pub fn import_live(store: &mut Store, platform: &'static str, origin: &str, chan
         }
         let cid = w.channel(&c.ext_id, &c.name, &c.kind, None, None)?;
         for m in &c.messages {
-            w.message(&m.ext_id, cid, m.ts, &m.content, "", m.link.as_deref())?;
+            w.message_in(&m.ext_id, cid, m.ts, &m.content, "", m.link.as_deref(), m.thread.as_deref())?;
         }
     }
     let summary = ImportSummary {

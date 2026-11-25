@@ -1,2 +1,5 @@
-Dark mode: choose Light, Dark or System under Appearance in the settings menu (the gear, top right).
-Sompio now looks for updates every two hours while it's open, and tries again soon if a check failed because the computer wasn't online yet.
+Trace is now one screen. Everything you found is listed once, with how many emails or messages and conversations it's in, so the same thing quoted through a whole email conversation no longer fills the list. Open any conversation from the details.
+Gmail links now open the right email. Sync your mailbox once after updating to get the new links.
+Add a source now shows every service with the right next step: connect it, add its file, or ask it for your data.
+Things you've dealt with leave the list; the counter at the bottom left shows them. Trace opens where you left off.
+Services are shown with their logos.

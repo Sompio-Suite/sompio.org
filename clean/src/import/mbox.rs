@@ -18,6 +18,12 @@ pub struct Mail {
     pub id: String,
     pub ts: i64,
     pub text: String,
+    /// The conversation it belongs to: Gmail's conversation ID, or the first email it replies to.
+    pub thread: String,
+    /// The sender's address (yours, for sent mail).
+    pub from: String,
+    /// Gmail's own conversation ID, in exports from Google Takeout.
+    pub gmail_thread: Option<u64>,
 }
 
 /// Separates your own words from the quoted or forwarded email under them. Everything after
@@ -124,7 +130,19 @@ pub(crate) fn parse_mail(raw: &[u8]) -> Option<Mail> {
     }
     let ts = msg.date().map(|d| d.to_timestamp() * 1000).unwrap_or(0);
     let id = msg.message_id().map(str::to_string).unwrap_or_else(|| format!("{ts}-{}", subject.len()));
-    Some(Mail { id, ts, text })
+    let from = msg.from().and_then(|a| a.first()).and_then(|a| a.address()).unwrap_or("").to_string();
+    let gmail_thread = msg.header_raw("X-GM-THRID").and_then(|v| v.trim().parse::<u64>().ok());
+    // The oldest email in the conversation: the first one listed under References, else the one it
+    // answers, else this one.
+    let first_of = |v: &mail_parser::HeaderValue| -> Option<String> {
+        v.as_text_list().and_then(|l| l.first().map(|s| s.to_string())).or_else(|| v.as_text().map(str::to_string))
+    };
+    let root = first_of(msg.references()).or_else(|| first_of(msg.in_reply_to())).unwrap_or_else(|| id.clone());
+    let thread = match gmail_thread {
+        Some(t) => format!("gm:{t}"),
+        None => root.trim().trim_matches(['<', '>']).to_string(),
+    };
+    Some(Mail { id, ts, text, thread, from, gmail_thread })
 }
 
 /// Splits an mbox stream into messages and calls `f` with each one's raw bytes.
@@ -192,7 +210,12 @@ pub(super) fn import(
                     return Ok(());
                 }
                 if let Some(m) = super::parse_sent_mail(raw) {
-                    w.message(&m.id, cid, m.ts, &m.text, "", Some(&super::gmail_link(&m.id)))?;
+                    // Google Takeout says which Gmail conversation each email is in: open that directly.
+                    let link = match m.gmail_thread {
+                        Some(t) => super::gmail_open_link(&m.from, t),
+                        None => super::gmail_link(&m.id),
+                    };
+                    w.message_in(&m.id, cid, m.ts, &m.text, "", Some(&link), Some(&m.thread))?;
                 }
                 Ok(())
             })

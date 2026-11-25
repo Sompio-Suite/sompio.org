@@ -2,9 +2,10 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api, copyText, listen, openLabel, openLink as openUrl, pickSavePath, platformName, severityLabel,
-  type FindingView, type GroupInfo, type KindKey, type Platform, type Previous, type ScanSummary, type Status, type StatusTab,
+  type Conversation, type FindingView, type GroupInfo, type KindKey, type Platform, type Previous, type ScanSummary, type SourceView, type Status, type StatusTab, type TraceData,
 } from "../api";
-import type { Jump } from "../App";
+import type { Jump, View } from "../App";
+import ServiceIcon, { mailName, mailProvider } from "../ServiceIcon";
 import { dateTime, n, plural } from "../format";
 import Icon from "../Icon";
 import { usePaged } from "../usePaged";
@@ -15,6 +16,8 @@ interface Props {
   initialKind: KindKey | null;
   onScan: (s: ScanSummary) => void;
   onOpen: (j: Jump) => void;
+  /** The other Trace pages: adding a source, requests, settings, messages */
+  onGo: (v: View) => void;
 }
 
 interface Toast { text: string; undo?: () => void }
@@ -28,11 +31,14 @@ interface Guide { items: FindingView[]; i: number; deleted: number; ok: number; 
 /** A run of deletions on a connected platform, one message at a time. */
 interface Batch { label: string; done: number; total: number; failed: number }
 
-const loadGrouped = () => {
+/** Where you were: the type you had open and the row you were on. */
+const WHERE_KEY = "sompio.review.where";
+const loadWhere = (): { kind: KindKey | null; focus: number } => {
   try {
-    return localStorage.getItem("sompio.review.grouped2") === "1";
+    const w = JSON.parse(localStorage.getItem(WHERE_KEY) ?? "null");
+    return { kind: w?.kind ?? null, focus: Number.isInteger(w?.focus) ? w.focus : 0 };
   } catch {
-    return false;
+    return { kind: null, focus: 0 };
   }
 };
 
@@ -70,15 +76,16 @@ const NOUN: Record<KindKey, string> = {
   location: "location",
 };
 
-export default function Review({ scan, demo, initialKind, onScan, onOpen }: Props) {
+export default function Review({ scan, demo, initialKind, onScan, onOpen, onGo }: Props) {
   const [tab, setTab] = useState<StatusTab>("open");
-  const [kind, setKind] = useState<KindKey | null>(initialKind);
+  const [where] = useState(loadWhere);
+  const [kind, setKind] = useState<KindKey | null>(initialKind ?? where.kind);
   const [platform, setPlatform] = useState<Platform | null>(null);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [revealAll, setRevealAll] = useState(loadReveal);
   const [showTerms, setShowTerms] = useState(false);
   const [revealed, setRevealed] = useState<Map<number, FindingView>>(new Map());
-  const [focus, setFocus] = useState(0);
+  const [focus, setFocus] = useState(initialKind ? 0 : where.focus);
   const [listVersion, setListVersion] = useState(0);
   const [toast, setToast] = useState<Toast | null>(null);
   const [scanning, setScanning] = useState<[number, number] | null>(null);
@@ -88,7 +95,12 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
   const [confirmRecycle, setConfirmRecycle] = useState(false);
   const [tgConnected, setTgConnected] = useState(false);
   const [emailConnected, setEmailConnected] = useState(false);
-  const [grouped, setGrouped] = useState(loadGrouped);
+  // Each value once, with the conversations it's in: the same number in 6 replies is one row.
+  const grouped = true;
+  const [sources, setSources] = useState<SourceView[]>([]);
+  const [mailAccount, setMailAccount] = useState<string | null>(null);
+  const [trace, setTrace] = useState<TraceData | null>(null);
+  const [allConvs, setAllConvs] = useState(false);
   const [sameAs, setSameAs] = useState<FindingView | null>(null);
   const [selected, setSelected] = useState<Map<number, FindingView>>(new Map());
   const [anchor, setAnchor] = useState<number | null>(null);
@@ -103,11 +115,17 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
       setTerms(t);
       setScannedTerms(t);
     });
+    api.traceData().then(setTrace).catch(() => {});
     api.sources().then((s) => {
+      setSources(s);
       setPlatforms(s.map((x) => x.platform));
       // Only ask about the Telegram connection when there is Telegram data to act on.
       if (s.some((x) => x.platform === "telegram")) api.tgStatus().then((t) => setTgConnected(t.connected)).catch(() => {});
-      if (s.some((x) => x.platform === "email")) api.emailStatus().then((t) => setEmailConnected(t.connected)).catch(() => {});
+      if (s.some((x) => x.platform === "email"))
+        api.emailStatus().then((t) => {
+          setEmailConnected(t.connected);
+          setMailAccount(t.provider ?? null);
+        }).catch(() => {});
     });
     const un = listen<[number, number]>("scan-progress", setScanning);
     // Data that was never checked: check it now, so the findings are always there
@@ -141,12 +159,20 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
   }, [tab, kind, platform, grouped, sameAs, listVersion]);
   useEffect(() => {
     try {
-      localStorage.setItem("sompio.review.grouped2", grouped ? "1" : "0");
       localStorage.setItem("sompio.review.reveal", revealAll ? "1" : "0");
     } catch {
       /* not available: the setting just isn't remembered */
     }
-  }, [grouped, revealAll]);
+  }, [revealAll]);
+  // Remember where you were, so Trace opens there next time.
+  useEffect(() => {
+    if (tab !== "open" || sameAs) return;
+    try {
+      localStorage.setItem(WHERE_KEY, JSON.stringify({ kind, focus }));
+    } catch {
+      /* fine */
+    }
+  }, [kind, focus, tab, sameAs]);
 
   // If the selected type has nothing left (say, after "never flag this again"), go back to everything.
   useEffect(() => {
@@ -188,6 +214,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
     api.groupInfo(focusedId, tab).then((g) => live && setGroup(g)).catch(() => {});
     return () => { live = false; };
   }, [focusedId, focusedRepeats, tab, listVersion]);
+  useEffect(() => setAllConvs(false), [focusedId]);
 
   /** One decision for many findings, with Undo. */
   const applyMany = useCallback(
@@ -502,13 +529,21 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
   const current = base && (revealed.get(base.id) ? { ...base, ...pickText(revealed.get(base.id)!) } : base);
 
   const kinds = scan ? scan.by_kind.filter((k) => k.count > 0) : [];
-  const kindCount = (k: (typeof kinds)[number]) => (tab === "open" ? k.open : null);
+  const kindCount = (k: (typeof kinds)[number]) => (tab === "open" ? k.values_open ?? k.open : null);
   const bySeverity: [number, string][] = [[3, "Fix now"], [2, "Worth a look"], [1, "Low risk"]];
-  const tabCount = scan ? (tab === "open" ? scan.open : tab === "later" ? scan.later : scan.done) : 0;
+  const tabCount = scan
+    ? tab === "open" ? scan.values_open ?? scan.open : tab === "later" ? scan.values_later ?? scan.later : scan.values_done ?? scan.done
+    : 0;
+  const whereName = (f: FindingView) => (f.platform === "email" ? mailName(mailProvider(f.link, mailAccount)) : platformName[f.platform]);
+  const whereIcon = (f: FindingView) => (f.platform === "email" ? `mail:${mailProvider(f.link, mailAccount)}` : f.platform);
+  const placeNoun = (f: FindingView, k: number) => plural(k, f.platform === "email" ? "email" : f.platform === "pc" ? "file" : "message", f.platform === "email" ? "emails" : f.platform === "pc" ? "files" : "messages");
 
   return (
     <div className="xc-page review-page">
       <div className="xc-toolbar" role="toolbar" aria-label="Findings">
+        <button className="search-field" onClick={() => onGo("messages")} title="Search everything you've sent">
+          <Icon name="search" size={15} /><span>Search your messages</span>
+        </button>
         <button onClick={() => runScan()} disabled={!!scanning} title="Check every message and file again"><Icon name="refresh" size={16} />Check again</button>
         <button aria-pressed={showTerms} onClick={() => setShowTerms(!showTerms)} title="Your name, street, school: things only you know are sensitive">
           <Icon name="filter" size={16} />Watch terms{terms.length ? ` (${terms.length})` : ""}
@@ -517,26 +552,21 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
           <Icon name="trash" size={16} />Clean up
         </button>
         <button onClick={exportList} disabled={!scanned || all === 0} title="A list of everything found, with links. No message text."><Icon name="save" size={16} />Save list</button>
-        <span className="sep" />
-        {scanned && all > 0 && (
-          <div className="segmented" role="tablist" aria-label="Review status">
-            {([["open", "To review", scan!.open], ["later", "Later", scan!.later], ["done", "Done", scan!.done]] as const).map(([id, label, count]) => (
-              <button key={id} role="tab" aria-selected={tab === id} onClick={() => { setTab(id); setFocus(0); }}>
-                {label} <span className="num">{n(count)}</span>
-              </button>
-            ))}
-          </div>
-        )}
         <span className="grow" />
         <label className="switch" title="Show what was found. Turn off when someone can see your screen.">
           <input type="checkbox" checked={revealAll} onChange={(e) => { setRevealAll(e.target.checked); setRevealed(new Map()); }} />
           Show values
         </label>
-        <label className="switch" title="Show each value once, with how many places it appears">
-          <input type="checkbox" checked={grouped} onChange={(e) => { setGrouped(e.target.checked); setSameAs(null); setFocus(0); }} />
-          Group repeats
-        </label>
+        <button className="icon-only" aria-label="Trace settings" title="Trace settings: names, things never to flag, your data" onClick={() => onGo("settings")}>
+          <Icon name="settings" size={16} />
+        </button>
       </div>
+      {tab !== "open" && (
+        <div className="banner-row">
+          <span>{tab === "later" ? "Saved for later." : "What you've dealt with. Kept so you can undo a slip."}</span>
+          <button className="quiet" onClick={() => { setTab("open"); setFocus(0); }}>Back to what's left</button>
+        </div>
+      )}
 
       {(showTerms || !scanned) && (
         <WatchTerms
@@ -586,7 +616,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
       <div className="xc-body">
         <aside className="xc-tree" aria-label="What was found">
           <button className="xc-node root" aria-current={kind == null} onClick={() => { setKind(null); setFocus(0); }}>
-            <Icon name="review" size={16} /><span>Everything found</span><span className="num">{n(tabCount)}</span>
+            <Icon name="review" size={16} /><span>{tab === "open" ? "Everything left" : "Everything"}</span><span className="num">{n(tabCount)}</span>
           </button>
           {bySeverity.map(([sev, title]) => {
             const ks = kinds.filter((k) => k.severity === sev);
@@ -595,8 +625,9 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
               <div key={sev} className="xc-branch">
                 <div className="xc-branch-label"><span className={`sev sev-${sev}`} />{title}</div>
                 {ks.map((k) => (
-                  <button key={k.kind} className="xc-node" aria-current={kind === k.kind} onClick={() => { setKind(k.kind); setFocus(0); }}>
-                    <span>{k.label}</span><span className="num">{kindCount(k) == null ? "" : n(kindCount(k)!)}</span>
+                  <button key={k.kind} className={`xc-node${tab === "open" && kindCount(k) === 0 ? " all-done" : ""}`} aria-current={kind === k.kind} onClick={() => { setKind(k.kind); setFocus(0); }}>
+                    <span>{k.label}</span>
+                    <span className="num">{kindCount(k) == null ? "" : kindCount(k) === 0 ? <Icon name="check" size={13} /> : n(kindCount(k)!)}</span>
                   </button>
                 ))}
               </div>
@@ -607,15 +638,25 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
               <div className="xc-branch-label">Where</div>
               <button className="xc-node" aria-current={platform == null} onClick={() => { setPlatform(null); setFocus(0); }}><span>All sources</span></button>
               {platforms.map((p) => (
-                <button key={p} className="xc-node" aria-current={platform === p} onClick={() => { setPlatform(p); setFocus(0); }}><span>{platformName[p]}</span></button>
+                <button key={p} className="xc-node" aria-current={platform === p} onClick={() => { setPlatform(p); setFocus(0); }}>
+                  <span className="with-icon"><ServiceIcon id={p === "email" ? `mail:${mailAccount ?? "other"}` : p} size={14} />{p === "email" && mailAccount ? mailName(mailAccount) : platformName[p]}</span>
+                </button>
               ))}
             </div>
           )}
+          {scanned && (scan?.values_later ?? 0) > 0 && (
+            <button className="xc-node" aria-current={tab === "later"} onClick={() => { setTab(tab === "later" ? "open" : "later"); setFocus(0); }}>
+              <Icon name="clock" size={15} /><span>Saved for later</span><span className="num">{n(scan!.values_later!)}</span>
+            </button>
+          )}
+          <span className="grow" />
+          <SourcesBox sources={sources} trace={trace} mailAccount={mailAccount} onAdd={() => onGo("sources")} onRequests={() => onGo("requests")} />
           {scanned && all > 0 && (
-            <div className="xc-tree-foot">
-              <div className="bar" aria-hidden><span style={{ width: `${(scan!.done / all) * 100}%` }} /></div>
-              <span className="small muted">{n(scan!.done)} of {n(all)} dealt with</span>
-            </div>
+            <button className="xc-tree-foot progress-link" onClick={() => { setTab(tab === "done" ? "open" : "done"); setFocus(0); }}
+              title="See what you've dealt with">
+              <div className="bar" aria-hidden><span style={{ width: `${((scan!.values_done ?? scan!.done) / Math.max(1, scan!.values_total ?? all)) * 100}%` }} /></div>
+              <span className="small muted">{n(scan!.values_done ?? scan!.done)} of {n(scan!.values_total ?? all)} dealt with</span>
+            </button>
           )}
         </aside>
 
@@ -625,14 +666,14 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
               <span />
               <span>Type</span>
               <span>Found</span>
-              <span>In the message</span>
+              <span>How often</span>
               <span>Where</span>
-              <span>Date</span>
+              <span>Last seen</span>
             </div>
             <div className="xc-rows" ref={parentRef} role="listbox" aria-label="Findings" aria-activedescendant={base ? `f-${base.id}` : undefined} tabIndex={0}>
               {scanned && total === 0 && (
                 <div className="empty">
-                  {all === 0 ? "Nothing personal found. Add more sources, or watch terms like your name." : tab === "open" ? "Nothing left to review here." : tab === "later" ? "Nothing saved for later." : "Nothing marked as done yet."}
+                  {all === 0 ? "Nothing personal found. Add more sources, or watch terms like your name." : tab === "open" ? "Nothing left here. Well done." : tab === "later" ? "Nothing saved for later." : "Nothing dealt with yet."}
                 </div>
               )}
               {!scanned && !scanning && <div className="empty">Not checked yet. Click Check again.</div>}
@@ -678,8 +719,12 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                           <span className="c-found">
                             {t.masked ? <span className="redact">{t.matched}</span> : <strong>{t.matched}</strong>}
                           </span>
-                          <span className="c-msg">{t.before.slice(-40)}<mark>{t.masked ? "•••" : t.matched}</mark>{t.after.slice(0, 60)}</span>
-                          <span className="c-where">{t.repeats > 1 && groupList ? `${n(t.repeats)} places` : `${platformName[t.platform]}, ${t.channel_name}`}</span>
+                          <span className="c-msg">
+                            {t.repeats > 1 && groupList
+                              ? <><strong>{placeNoun(t, t.repeats)}</strong>{(t.conversations ?? 1) > 1 ? ` in ${plural(t.conversations!, "conversation", "conversations")}` : t.platform === "email" ? " in 1 conversation" : ""}</>
+                              : <span className="muted">{t.before.slice(-30)}<mark>{t.masked ? "•••" : t.matched}</mark>{t.after.slice(0, 40)}</span>}
+                          </span>
+                          <span className="c-where with-icon" title={`${whereName(t)}, ${t.channel_name}`}><ServiceIcon id={whereIcon(t)} size={15} />{whereName(t)}</span>
                           <span className="c-date">{dateTime(t.ts)}</span>
                         </div>
                       ) : (
@@ -699,7 +744,7 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                   <span className={`risk risk-${current.severity}`}>{severityLabel(current.severity)}</span>
                   <h2>{current.label}</h2>
                   {current.theirs && <TheirsChip />}
-                  <span className="tag">{platformName[current.platform]}</span>
+                  <span className="tag with-icon"><ServiceIcon id={whereIcon(current)} size={13} />{whereName(current)}</span>
                   <span className="small muted">{current.channel_name}, {dateTime(current.ts)}</span>
                   {current.status && (
                     <span className="status-chip"><Icon name="check" size={14} />{current.status === "deleted" ? "Deleted" : current.status === "ok" ? "Not a problem" : "Saved for later"}</span>
@@ -718,23 +763,26 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                       </button>
                       {current.after}
                     </p>
-                    {current.theirs && <p className="small theirs-note">{THEIRS_NOTE}</p>}
-                    <p className="small muted advice-line"><strong>What to do: </strong>{current.advice}</p>
-                    {current.link && current.platform !== "pc" && (
-                      <p className="small muted find-hint">
-                        When you open it, Sompio copies what it found. Press {navigator.platform.toLowerCase().includes("mac") ? "⌘F" : "Ctrl+F"} on the page and paste to jump to it.
-                      </p>
-                    )}
                     {current.repeats > 1 && !sameAs && (
                       <div className="group-box">
                         <div>
-                          <strong>{groupList ? "This" : "The same"} {NOUN[current.kind]} appears in {n(current.repeats)} places</strong>
+                          <strong>This {NOUN[current.kind]} is in {placeNoun(current, current.repeats)}{group?.conversations ? `, ${plural(group.conversations.length, "conversation", "conversations")}` : ""}</strong>
                           <span className="small muted">
-                            {group
-                              ? `${group.platforms.map((p) => `${platformName[p.platform]} ${n(p.count)}`).join(", ")}. ${yearSpan(group.first_ts, group.last_ts)}`
-                              : "Counting…"}
+                            {group ? yearSpan(group.first_ts, group.last_ts) : "Counting…"}{current.platform === "email" ? " Replies quote earlier emails, so one thing you wrote can be in a whole conversation." : ""}
                           </span>
                         </div>
+                        {group?.conversations && (
+                          <div className="conv-list">
+                            {(allConvs ? group.conversations : group.conversations.slice(0, 4)).map((c) => (
+                              <ConversationRow key={c.first_id} c={c} icon={c.platform === "email" ? `mail:${mailProvider(c.link, mailAccount)}` : c.platform}
+                                onOpen={() => goTo({ ...current, id: c.first_id, platform: c.platform, link: c.link, message_id: c.first_message_id, channel_id: c.first_channel_id })}
+                                onShow={() => onOpen({ channelId: c.first_channel_id, messageId: c.first_message_id })} />
+                            ))}
+                            {!allConvs && group.conversations.length > 4 && (
+                              <button className="link small" onClick={() => setAllConvs(true)}>Show all {n(group.conversations.length)} conversations</button>
+                            )}
+                          </div>
+                        )}
                         <div className="toolbar">
                           {group && tab !== "done" && group.platforms
                             .map((p) => ({ p: p.platform, how: liveFor(p.platform), count: p.count }))
@@ -757,9 +805,16 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
                                 <button key={x.p} onClick={() => setConfirmGroupDelete(x.p)}><Icon name="trash" size={16} />{x.how!.ask(x.count)}</button>
                               ),
                             )}
-                          <button className="quiet" onClick={() => { setSameAs(current); setFocus(0); }}>Show each place</button>
+                          <button className="quiet" onClick={() => { setSameAs(current); setFocus(0); }}>Decide on each place separately</button>
                         </div>
                       </div>
+                    )}
+                    {current.theirs && <p className="small theirs-note">{THEIRS_NOTE}</p>}
+                    <p className="small muted advice-line"><strong>What to do: </strong>{current.advice}</p>
+                    {current.link && current.platform !== "pc" && (
+                      <p className="small muted find-hint">
+                        When you open it, Sompio copies what it found. Press {navigator.platform.toLowerCase().includes("mac") ? "⌘F" : "Ctrl+F"} on the page and paste to jump to it.
+                      </p>
                     )}
                   </div>
 
@@ -850,6 +905,66 @@ export default function Review({ scan, demo, initialKind, onScan, onOpen }: Prop
           <button className="toast-close" aria-label="Dismiss" onClick={() => setToast(null)}>×</button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** One conversation a value appears in, with a way to open where it started. */
+function ConversationRow({ c, icon, onOpen, onShow }: { c: Conversation; icon: string; onOpen: () => void; onShow: () => void }) {
+  const noun = c.platform === "email" ? ["email", "emails"] : ["message", "messages"];
+  return (
+    <div className={`conv-row${c.open ? "" : " done"}`}>
+      <ServiceIcon id={icon} size={16} />
+      <div className="conv-text">
+        <strong title={c.title}>{c.title}</strong>
+        <span className="small muted">
+          {plural(c.count, noun[0], noun[1])} · {c.count > 1 ? `first on ${dateTime(c.first_ts)}` : dateTime(c.first_ts)}
+        </span>
+      </div>
+      {!c.open && <span className="small done-mark"><Icon name="check" size={13} />Dealt with</span>}
+      {c.link ? (
+        <button onClick={onOpen} title="Opens the first email of this conversation that has it">{c.count > 1 ? "Open the first one" : "Open"}</button>
+      ) : (
+        <button className="quiet" onClick={onShow}>Show</button>
+      )}
+    </div>
+  );
+}
+
+/** Your sources and requests, at the bottom of the list of types. */
+function SourcesBox({ sources, trace, mailAccount, onAdd, onRequests }: {
+  sources: SourceView[]; trace: TraceData | null; mailAccount: string | null; onAdd: () => void; onRequests: () => void;
+}) {
+  const have = new Set(sources.map((s) => s.platform));
+  const asked = Object.entries(trace?.exports ?? {}).filter(([key]) => !have.has((key === "gmail" ? "email" : key) as Platform));
+  const waiting = (trace?.requests ?? []).filter((r) => r.status === "waiting").length;
+  const ago = (day: string | null) => {
+    if (!day) return "";
+    const d = Math.max(0, Math.round((Date.now() - new Date(`${day}T00:00:00`).getTime()) / 86_400_000));
+    return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+  };
+  return (
+    <div className="xc-sources">
+      <div className="xc-branch-label">Sources</div>
+      {sources.map((s) => (
+        <div key={s.platform} className="xc-source">
+          <ServiceIcon id={s.platform === "email" ? `mail:${mailAccount ?? "other"}` : s.platform} size={14} />
+          <span>{s.platform === "email" && mailAccount ? mailName(mailAccount) : platformName[s.platform]}</span>
+          <span className="faint small">{dateTime(s.imported_at).split(",")[0]}</span>
+        </div>
+      ))}
+      {asked.map(([key, v]) => (
+        <div key={key} className="xc-source waiting" title="You asked for your data. Add the file when it arrives.">
+          <ServiceIcon id={key} size={14} />
+          <span>{platformName[key as Platform] ?? key}</span>
+          <span className="faint small">asked {ago(v.requested_on)}</span>
+        </div>
+      ))}
+      <button className="add-source" onClick={onAdd}><Icon name="plus" size={14} />Add a source</button>
+      <button className="req-card" onClick={onRequests}>
+        <strong>Ask companies to delete your data →</strong>
+        <span className="small muted">{waiting > 0 ? `${waiting} waiting for an answer` : "Letters and deadlines"}</span>
+      </button>
     </div>
   );
 }

@@ -43,7 +43,7 @@ export default function Settings({ scan, demo, onScan, onLeave }: Props) {
         </p>
         <code>{location}</code>
         <p className="muted small">
-          Your exports and files are never changed by importing them. Adding and removing sources is on the Sources screen.
+          Your exports and files are never changed by importing them. Adding and removing sources is under Add a source, at the bottom of the list in Trace.
         </p>
       </section>
 

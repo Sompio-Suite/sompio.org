@@ -70,13 +70,17 @@ export interface ImportSummary { platform: Platform; channels: number; messages:
 export interface ImportProgress { phase: string; done: number; total: number }
 export interface KindCount { kind: KindKey; label: string; severity: number; advice: string; count: number; open: number;
   /** Still to review, leaving out findings in someone else's words: what the score counts */
-  mine_open: number }
+  mine_open: number;
+  /** Different values still to review: one row each in the list */
+  values_open?: number }
 export interface ScanSummary {
   scanned: number; flagged_messages: number; total_findings: number;
   open: number; later: number; done: number; ignored_rules: number;
   scanned_at_ms: number | null; by_kind: KindCount[];
   /** Findings in someone else's words (a quoted email, a recipient's address) */
   theirs: number;
+  /** Counted per value, one row in the list each */
+  values_total?: number; values_open?: number; values_later?: number; values_done?: number;
 }
 export interface FindingView {
   id: number; message_id: string; channel_id: string; channel_name: string; platform: Platform; ts: number;
@@ -85,11 +89,19 @@ export interface FindingView {
   status: Status | null; link: string | null; file_path: string | null;
   /** How many findings in this list have the same value */
   repeats: number;
+  /** How many conversations the value is in (grouped lists) */
+  conversations?: number;
   /** In someone else's words: an email you quoted or forwarded, or a recipient's address */
   theirs: boolean;
 }
 
+/** One conversation a value appears in: an email thread, a chat, a channel. */
+export interface Conversation {
+  title: string; platform: Platform; count: number; first_ts: number; last_ts: number;
+  first_id: number; first_message_id: string; first_channel_id: string; link: string | null; open: boolean;
+}
 export interface GroupInfo {
+  conversations?: Conversation[];
   ids: number[];
   message_ids: string[];
   member_platforms: Platform[];

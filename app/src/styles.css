@@ -1570,3 +1570,38 @@ strong, b, th, dt { font-weight: 600; }
 .menu-theme { display: grid; gap: 0.3rem; padding: 0.45rem 0.7rem 0.4rem; border-top: 1px solid var(--line); margin-top: 0.2rem; }
 .menu-theme .segmented { width: 100%; }
 .menu-theme .segmented button { flex: 1; justify-content: center; padding: 0.22rem 0.4rem; font-size: var(--t-s); }
+
+/* Service logos (Trace) */
+.svc-icon { flex: none; vertical-align: -3px; }
+.svc-letter { display: inline-grid; place-items: center; flex: none; border-radius: 4px; background: var(--seg); color: var(--ink-2); font-weight: 700; line-height: 1; vertical-align: -3px; }
+
+/* Trace as one screen */
+.search-field { display: inline-flex; align-items: center; gap: 0.45rem; min-width: 220px; justify-content: flex-start; color: var(--ink-3); background: var(--surface); border: 1px solid var(--line-strong); font-weight: 400; }
+.search-field:hover { color: var(--ink-2); }
+button.icon-only { padding: 0.38rem 0.5rem; }
+.with-icon { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.with-icon > :last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xc-tree > .grow { flex: 1; min-height: 0.5rem; }
+.xc-node.all-done > span:first-of-type { color: var(--ink-3); }
+.xc-node.all-done .num { color: var(--ok-ink); }
+.xc-sources { display: grid; gap: 2px; padding: 0.5rem 0 0.2rem; border-top: 1px solid var(--line); }
+.xc-source { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.45rem; padding: 0.18rem 0.5rem; font-size: var(--t-s); }
+.xc-source > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xc-source.waiting > span:nth-child(2) { color: var(--ink-2); }
+.add-source { display: flex; align-items: center; justify-content: center; gap: 0.35rem; margin: 0.35rem 0.35rem 0; padding: 0.3rem; border: 1px dashed var(--line-strong); background: transparent; color: var(--ink-2); font-size: var(--t-s); font-weight: 500; }
+.add-source:hover { color: var(--ink); background: var(--hover); }
+.req-card { display: grid; gap: 0.1rem; margin: 0.6rem 0.35rem 0; padding: 0.55rem 0.65rem; text-align: left; background: var(--sunken); border: 1px solid var(--line); font-weight: 400; }
+.req-card strong { font-size: var(--t-s); }
+.req-card:hover { background: var(--hover); }
+button.progress-link { margin-top: 0.4rem; background: transparent; border: 0; text-align: left; font-weight: 400; cursor: pointer; border-radius: var(--r-m); }
+button.progress-link:hover { background: var(--hover); }
+.conv-list { display: grid; border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface); margin: 0.2rem 0 0.4rem; }
+.conv-list > .link { justify-self: start; padding: 0.4rem 0.7rem; }
+.conv-row { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 0.6rem; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--row-line); }
+.conv-row:last-of-type { border-bottom: 0; }
+.conv-row .conv-text { display: grid; min-width: 0; }
+.conv-row .conv-text strong { font-size: var(--t-s); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-row button { padding: 0.25rem 0.6rem; font-size: var(--t-s); }
+.conv-row.done .conv-text strong { color: var(--ink-2); font-weight: 500; }
+.done-mark { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--ok-ink); font-weight: 600; }
+.back-btn { margin-left: auto; }

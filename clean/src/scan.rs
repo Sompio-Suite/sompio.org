@@ -975,6 +975,8 @@ pub struct KindCount {
     pub open: i64,
     /// the same, leaving out findings in someone else's words: what the score counts
     pub mine_open: i64,
+    /// different values still to review (no decision yet): one row each in the list
+    pub values_open: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -992,6 +994,14 @@ pub struct ScanSummary {
     pub theirs: i64,
     pub scanned_at_ms: Option<i64>,
     pub by_kind: Vec<KindCount>,
+    /// Counted per value (one row in the list), not per place it appears.
+    pub values_total: i64,
+    /// values with something still to review
+    pub values_open: i64,
+    /// values with something saved for later and nothing to review
+    pub values_later: i64,
+    /// values where every place is deleted or not a problem
+    pub values_done: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1018,6 +1028,8 @@ pub struct FindingView {
     pub file_path: Option<String>,
     /// How many findings in the same list have this exact value (1 = only here)
     pub repeats: i64,
+    /// how many conversations the value appears in (grouped lists only, else 1)
+    pub conversations: i64,
     /// Found in someone else's words: an email you quoted or forwarded, or a recipient's address
     pub theirs: bool,
 }
@@ -1025,6 +1037,8 @@ pub struct FindingView {
 /// Every place one value was found, for acting on all of them at once.
 #[derive(Debug, Clone, Serialize)]
 pub struct GroupInfo {
+    /// The conversations the value appears in, newest first
+    pub conversations: Vec<Conversation>,
     pub ids: Vec<i64>,
     /// The message each finding is in, so a message is only deleted once
     pub message_ids: Vec<String>,
@@ -1033,6 +1047,25 @@ pub struct GroupInfo {
     pub platforms: Vec<GroupPlatform>,
     pub first_ts: i64,
     pub last_ts: i64,
+}
+
+/// One conversation a value appears in: an email thread, a chat, a channel.
+#[derive(Debug, Clone, Serialize)]
+pub struct Conversation {
+    /// the email's subject, or the chat or channel name
+    pub title: String,
+    pub platform: String,
+    /// places in this conversation
+    pub count: i64,
+    pub first_ts: i64,
+    pub last_ts: i64,
+    /// the earliest place in it: the one to open
+    pub first_id: i64,
+    pub first_message_id: String,
+    pub first_channel_id: String,
+    pub link: Option<String>,
+    /// still something to review here
+    pub open: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1194,6 +1227,10 @@ impl StatusFilter {
     }
 }
 
+/// Which conversation a message belongs to: its email thread, else (for posts and sent mail, which
+/// have no thread) the message itself, else its chat or channel.
+const CONV: &str = "COALESCE(m.thread, CASE WHEN ch.kind = 'posts' THEN 'm' || m.id ELSE 'c' || m.channel_id END)";
+
 const FINDING_FROM: &str = "FROM findings f
      JOIN messages m ON m.id = f.message_id
      JOIN channels ch ON ch.id = m.channel_id
@@ -1212,21 +1249,31 @@ impl Store {
         let one = |sql: &str| -> Result<i64> { Ok(c.query_row(sql, [], |r| r.get(0))?) };
         let mut stmt = c.prepare(&format!(
             "SELECT f.kind, COUNT(*), SUM(CASE WHEN r.status IS NULL OR r.status = 'later' THEN 1 ELSE 0 END),
-                    SUM(CASE WHEN (r.status IS NULL OR r.status = 'later') AND f.theirs = 0 THEN 1 ELSE 0 END)
+                    SUM(CASE WHEN (r.status IS NULL OR r.status = 'later') AND f.theirs = 0 THEN 1 ELSE 0 END),
+                    COUNT(DISTINCT CASE WHEN r.status IS NULL THEN f.fp END)
              {FINDING_FROM} GROUP BY f.kind"
         ))?;
-        let mut counts: HashMap<String, (i64, i64, i64)> = HashMap::new();
-        for row in stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))? {
-            let (k, n, open, mine_open) = row?;
-            counts.insert(k, (n, open, mine_open));
+        let mut counts: HashMap<String, (i64, i64, i64, i64)> = HashMap::new();
+        for row in stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)))? {
+            let (k, n, open, mine_open, values_open) = row?;
+            counts.insert(k, (n, open, mine_open, values_open));
         }
         let by_kind = Kind::ALL
             .into_iter()
             .map(|k| {
-                let (count, open, mine_open) = counts.get(k.key()).copied().unwrap_or((0, 0, 0));
-                KindCount { kind: k, label: k.label(), severity: k.severity(), advice: k.advice(), count, open, mine_open }
+                let (count, open, mine_open, values_open) = counts.get(k.key()).copied().unwrap_or((0, 0, 0, 0));
+                KindCount { kind: k, label: k.label(), severity: k.severity(), advice: k.advice(), count, open, mine_open, values_open }
             })
             .collect();
+        // Per value (one row in the list): the most pressing state of any place it appears.
+        let (values_total, values_open, values_later): (i64, i64, i64) = c.query_row(
+            &format!(
+                "SELECT COUNT(*), SUM(o > 0), SUM(o = 0 AND l > 0) FROM (
+                   SELECT SUM(r.status IS NULL) AS o, SUM(r.status = 'later') AS l {FINDING_FROM} GROUP BY f.kind, f.fp)"
+            ),
+            [],
+            |r| Ok((r.get(0)?, r.get::<_, Option<i64>>(1)?.unwrap_or(0), r.get::<_, Option<i64>>(2)?.unwrap_or(0))),
+        )?;
         let status_count = |filter: StatusFilter| one(&format!("SELECT COUNT(*) {FINDING_FROM} WHERE {}", filter.sql()));
         Ok(ScanSummary {
             scanned: one("SELECT COUNT(*) FROM messages")?,
@@ -1239,6 +1286,10 @@ impl Store {
             theirs: one("SELECT COUNT(*) FROM findings WHERE theirs = 1")?,
             scanned_at_ms: self.get_meta("scanned_at_ms")?.and_then(|s| s.parse().ok()),
             by_kind,
+            values_total,
+            values_open,
+            values_later,
+            values_done: values_total - values_open - values_later,
         })
     }
 
@@ -1319,8 +1370,15 @@ impl Store {
             })?
             .collect::<rusqlite::Result<_>>()?;
 
+        // In a grouped list, how many conversations each value is in.
+        let mut convs = c.prepare_cached(&format!(
+            "SELECT COUNT(DISTINCT {CONV}) {FINDING_FROM}
+             WHERE (f.kind, f.fp) = (SELECT kind, fp FROM findings WHERE id = ?1) AND (?2 IS NULL OR ch.platform = ?2) AND {}",
+            q.status.sql()
+        ))?;
         let mut items = Vec::with_capacity(rows.len());
         for (id, mid, cid, cname, platform, ts, k, start, end, content, status, link, attachments, repeats, theirs) in rows {
+            let conversations = if q.group && repeats > 1 { convs.query_row(params![id, q.platform], |r| r.get(0))? } else { 1 };
             let Some(kind) = Kind::from_key(&k) else { continue };
             if end > content.len() || !content.is_char_boundary(start) || !content.is_char_boundary(end) {
                 continue;
@@ -1347,6 +1405,7 @@ impl Store {
                 link,
                 file_path,
                 repeats,
+                conversations,
                 theirs,
             });
         }
@@ -1356,13 +1415,54 @@ impl Store {
     /// Every finding with the same value as `finding_id`, within one status list.
     pub fn group_info(&self, finding_id: i64, status: StatusFilter) -> Result<GroupInfo> {
         let mut stmt = self.conn.prepare(&format!(
-            "SELECT f.id, f.message_id, ch.platform, m.ts {FINDING_FROM}
+            "SELECT f.id, f.message_id, ch.platform, m.ts, {CONV}, ch.name, substr(m.content, 1, 400), m.link, m.channel_id, r.status
+             {FINDING_FROM}
              WHERE (f.kind, f.fp) = (SELECT kind, fp FROM findings WHERE id = ?1) AND {}
-             ORDER BY m.ts",
+             ORDER BY m.ts, f.id",
             status.sql()
         ))?;
-        let rows: Vec<(i64, i64, String, i64)> =
-            stmt.query_map([finding_id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?.collect::<rusqlite::Result<_>>()?;
+        type Row = (i64, i64, String, i64, String, String, String, Option<String>, i64, Option<String>);
+        let full: Vec<Row> = stmt
+            .query_map([finding_id], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?, r.get(6)?, r.get(7)?, r.get(8)?, r.get(9)?))
+            })?
+            .collect::<rusqlite::Result<_>>()?;
+        let mut conversations: Vec<(String, Conversation)> = Vec::new();
+        for (id, mid, platform, ts, key, cname, head, link, cid, st) in &full {
+            match conversations.iter_mut().find(|(k, _)| k == key) {
+                Some((_, c)) => {
+                    c.count += 1;
+                    c.last_ts = *ts;
+                    c.open |= st.is_none();
+                }
+                None => {
+                    let subject = head.lines().find_map(|l| l.strip_prefix("Subject: ")).map(str::trim).filter(|s| !s.is_empty());
+                    let title = match subject {
+                        Some(s) => s.to_string(),
+                        None if platform == "email" => "(no subject)".to_string(),
+                        None => cname.clone(),
+                    };
+                    conversations.push((
+                        key.clone(),
+                        Conversation {
+                            title,
+                            platform: platform.clone(),
+                            count: 1,
+                            first_ts: *ts,
+                            last_ts: *ts,
+                            first_id: *id,
+                            first_message_id: mid.to_string(),
+                            first_channel_id: cid.to_string(),
+                            link: link.clone(),
+                            open: st.is_none(),
+                        },
+                    ))
+                }
+            }
+        }
+        let mut conversations: Vec<Conversation> = conversations.into_iter().map(|(_, c)| c).collect();
+        conversations.sort_by(|a, b| b.last_ts.cmp(&a.last_ts));
+        let rows: Vec<(i64, i64, String, i64)> = full.iter().map(|r| (r.0, r.1, r.2.clone(), r.3)).collect();
         let mut platforms: Vec<GroupPlatform> = Vec::new();
         for (_, _, p, _) in &rows {
             match platforms.iter_mut().find(|x| &x.platform == p) {
@@ -1372,6 +1472,7 @@ impl Store {
         }
         platforms.sort_by(|a, b| b.count.cmp(&a.count));
         Ok(GroupInfo {
+            conversations,
             first_ts: rows.first().map_or(0, |r| r.3),
             last_ts: rows.last().map_or(0, |r| r.3),
             ids: rows.iter().map(|r| r.0).collect(),

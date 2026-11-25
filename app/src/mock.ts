@@ -49,7 +49,10 @@ const channelDefs: [string, ChannelView["kind"], string | null][] = [
   ["help", "server", "Home Lab Builders"], ["Direct message with sam", "dm", null], ["Direct message with noor", "dm", null], ["Weekend crew", "group_dm", null],
 ];
 
-interface Msg { id: string; channel_id: string; channel_name: string; platform: Platform; guild: string | null; ts: number; content: string; attachments: string[]; file_path?: string }
+interface Msg { id: string; channel_id: string; channel_name: string; platform: Platform; guild: string | null; ts: number; content: string; attachments: string[]; file_path?: string; thread?: string }
+/** The conversation a message is in: its email thread, else its chat or channel. */
+const convKey = (m: Msg) => m.thread ?? m.channel_id;
+const convTitle = (m: Msg) => m.content.match(/^Subject: (.+)$/m)?.[1] ?? m.channel_name;
 let channels: ChannelView[] = [];
 let messages: Msg[] = [];
 let sources: SourceView[] = [];
@@ -142,14 +145,14 @@ const isTheirs = (f: Finding) => {
   return q >= 0 && f.start >= q;
 };
 
-function view(f: Finding, reveal: boolean, repeats = 1): FindingView {
+function view(f: Finding, reveal: boolean, repeats = 1, conversations = 1): FindingView {
   const [label, severity, advice] = KINDS[f.kind];
   const c = f.msg.content;
   const v = c.slice(f.start, f.end);
   return {
     id: f.id, message_id: f.msg.id, channel_id: f.msg.channel_id, channel_name: f.msg.channel_name, platform: f.msg.platform, ts: f.msg.ts,
     kind: f.kind, label, severity, advice, before: c.slice(0, f.start), matched: reveal ? v : mask(v), after: c.slice(f.end),
-    masked: !reveal, status: statuses.get(f.id) ?? null, link: url(f.msg), file_path: f.msg.file_path ?? null, repeats,
+    masked: !reveal, status: statuses.get(f.id) ?? null, link: url(f.msg), file_path: f.msg.file_path ?? null, repeats, conversations,
     theirs: isTheirs(f),
   };
 }
@@ -169,6 +172,18 @@ function messageView(m: Msg, reveal: boolean): MessageView {
   return { ...m, content: segments.map((s) => s.text).join(""), segments, has_sensitive: spans.length > 0, link: url(m), file_path: m.file_path ?? null };
 }
 
+/** Per value (one row in the list): the most pressing state of any place it appears. */
+function valueCounts() {
+  const by = new Map<string, Finding[]>();
+  findings.forEach((f) => by.set(valueKey(f), [...(by.get(valueKey(f)) ?? []), f]));
+  let open = 0, later = 0;
+  for (const fs of by.values()) {
+    if (fs.some((f) => !statuses.get(f.id))) open++;
+    else if (fs.some((f) => statuses.get(f.id) === "later")) later++;
+  }
+  return { values_total: by.size, values_open: open, values_later: later, values_done: by.size - open - later };
+}
+
 function summary(): ScanSummary {
   const st = (f: Finding) => statuses.get(f.id);
   return {
@@ -183,8 +198,9 @@ function summary(): ScanSummary {
     theirs: findings.filter(isTheirs).length,
     by_kind: (Object.keys(KINDS) as KindKey[]).map((k) => {
       const fs = findings.filter((f) => f.kind === k);
-      return { kind: k, label: KINDS[k][0], severity: KINDS[k][1], advice: KINDS[k][2], count: fs.length, open: fs.filter((f) => !st(f) || st(f) === "later").length, mine_open: fs.filter((f) => (!st(f) || st(f) === "later") && !isTheirs(f)).length };
+      return { kind: k, label: KINDS[k][0], severity: KINDS[k][1], advice: KINDS[k][2], count: fs.length, open: fs.filter((f) => !st(f) || st(f) === "later").length, mine_open: fs.filter((f) => (!st(f) || st(f) === "later") && !isTheirs(f)).length, values_open: new Set(fs.filter((f) => !st(f)).map(valueKey)).size };
     }),
+    ...valueCounts(),
   };
 }
 
@@ -274,11 +290,18 @@ const handlers: Record<string, (a: any) => unknown> = {
   email_sync: async () => {
     for (let i = 0; i <= 1840; i += 100) { emit("email-progress", { done: Math.min(i, 1840), total: 1840 }); await wait(60); }
     messages = messages.filter((m) => m.platform !== "email");
-    const mailMsg = (id: string, ts: number, content: string): Msg => ({ id, channel_id: "sent", channel_name: "Sent mail", platform: "email", guild: null, ts, content, attachments: [] });
+    const mailMsg = (id: string, ts: number, content: string, thread = id): Msg => ({ id, channel_id: "sent", channel_name: "Sent mail", platform: "email", guild: null, ts, content, attachments: [], thread });
+    // A conversation where every reply carries the same signature: one row in the list, not four.
+    const sig = "\n\nSam Rivers\nPrinsengracht 263\n1016 GV Amsterdam\n+31 6 1234 5678";
+    ["Flat viewing Prinsengracht", "Re: Flat viewing Prinsengracht", "Re: Flat viewing Prinsengracht", "Re: Flat viewing Prinsengracht"].forEach((subj, i) =>
+      messages.push(mailMsg(`v${i}@mail.example`, Date.UTC(2025, 9, 3 + i * 2), `To: viewings@makelaar.example\nSubject: ${subj}\n\n${["Could I see the flat on Saturday?", "Saturday at 11 works, thanks.", "I'll bring the documents.", "Thanks for showing me around!"][i]}${sig}`, "flat-viewing")),
+    );
+    messages.push(mailMsg("w1@mail.example", Date.UTC(2025, 5, 12), `To: shop@example.com\nSubject: Return order 48213\n\nI'd like to return the jacket.${sig}`));
     messages.push(
       mailMsg("m1@mail.example", Date.UTC(2024, 0, 8), "To: landlord@example.org\nSubject: Rent\n\nHi, my IBAN is NL91 ABNA 0417 1643 00 for the deposit."),
       mailMsg("m2@mail.example", Date.UTC(2024, 2, 3), `To: noor.bakker@example.org\nSubject: Re: weekend\n\nSounds good, see you Saturday!${QUOTED_MARK}Op za 2 mrt. 2024 om 18:10 schreef Noor <noor.bakker@example.org>:\nNew number, text me on 06-12345678`),
     );
+    loaded = true;
     sources = [...sources.filter((x) => x.platform !== "email"), { platform: "email", label: "Email", origin: "Connected email account", imported_at: Date.now(), channels: 1, messages: 1840 }];
     return { platform: "email", channels: 1, messages: 1840, servers: 0, warnings: [] };
   },
@@ -443,7 +466,11 @@ const handlers: Record<string, (a: any) => unknown> = {
       && (!same || valueKey(f) === valueKey(same)))
       .sort((a, b) => +isTheirs(a) - +isTheirs(b) || KINDS[b.kind][1] - KINDS[a.kind][1] || b.msg.ts - a.msg.ts);
     const counts = new Map<string, number>();
-    all.forEach((f) => counts.set(valueKey(f), (counts.get(valueKey(f)) ?? 0) + 1));
+    const convs = new Map<string, Set<string>>();
+    all.forEach((f) => {
+      counts.set(valueKey(f), (counts.get(valueKey(f)) ?? 0) + 1);
+      convs.set(valueKey(f), (convs.get(valueKey(f)) ?? new Set()).add(convKey(f.msg)));
+    });
     let list = all;
     if (group) {
       const seen = new Set<string>();
@@ -451,14 +478,21 @@ const handlers: Record<string, (a: any) => unknown> = {
         .sort((a, b) => +isTheirs(a) - +isTheirs(b) || KINDS[b.kind][1] - KINDS[a.kind][1] || counts.get(valueKey(b))! - counts.get(valueKey(a))! || b.msg.ts - a.msg.ts);
     }
     const p = page(list, offset, limit);
-    return { ...p, theirs: list.filter(isTheirs).length, items: p.items.map((f) => view(f, reveal, counts.get(valueKey(f)))) };
+    return { ...p, theirs: list.filter(isTheirs).length, items: p.items.map((f) => view(f, reveal, counts.get(valueKey(f)), group ? convs.get(valueKey(f))!.size : 1)) };
   },
   group_info: ({ id, status }) => {
     const me = findings.find((f) => f.id === id)!;
     const members = findings.filter((f) => valueKey(f) === valueKey(me) && matchesTab(f, status)).sort((a, b) => a.msg.ts - b.msg.ts);
     const platforms = new Map<string, number>();
     members.forEach((f) => platforms.set(f.msg.platform, (platforms.get(f.msg.platform) ?? 0) + 1));
+    const conv = new Map<string, Finding[]>();
+    members.forEach((f) => conv.set(convKey(f.msg), [...(conv.get(convKey(f.msg)) ?? []), f]));
+    const conversations = [...conv.values()].map((fs) => ({
+      title: convTitle(fs[0].msg), platform: fs[0].msg.platform, count: fs.length, first_ts: fs[0].msg.ts, last_ts: fs[fs.length - 1].msg.ts,
+      first_id: fs[0].id, first_message_id: fs[0].msg.id, first_channel_id: fs[0].msg.channel_id, link: url(fs[0].msg), open: fs.some((f) => !statuses.get(f.id)),
+    })).sort((a, b) => b.last_ts - a.last_ts);
     return {
+      conversations,
       ids: members.map((f) => f.id), message_ids: members.map((f) => f.msg.id), member_platforms: members.map((f) => f.msg.platform),
       platforms: [...platforms].map(([platform, count]) => ({ platform, count })).sort((a, b) => b.count - a.count),
       first_ts: members[0]?.msg.ts ?? 0, last_ts: members[members.length - 1]?.msg.ts ?? 0,

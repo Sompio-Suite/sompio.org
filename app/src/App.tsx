@@ -279,7 +279,7 @@ export default function App() {
       case "home":
         return <Home key={version} scan={scan} onReview={openReview} onGo={setView} onOpen={openChannel} />;
       case "review":
-        return <Review key={`${version}-${reviewKind}`} scan={scan} demo={demo} initialKind={reviewKind} onScan={setScan} onOpen={openChannel} />;
+        return <Review key={`${version}-${reviewKind}`} scan={scan} demo={demo} initialKind={reviewKind} onScan={setScan} onOpen={openChannel} onGo={setView} />;
       case "requests":
         return <Requests key={version} readOnly={cleanLocked} onGo={setView} />;
       case "messages":
@@ -418,15 +418,9 @@ export default function App() {
               <h1>Trace</h1>
               <span className="muted">Find and remove what you've shared over the years.</span>
             </div>
-            {ready && (
-              <div className="segmented" role="tablist" aria-label="Trace">
-                {([["review", "Findings"], ["requests", "Requests"], ["home", "Summary"], ["messages", "Messages"], ["sources", "Sources"], ["settings", "Settings"]] as [View, string][]).map(([id, label]) => (
-                  <button key={id} role="tab" aria-selected={view === id} onClick={() => (id === "review" ? openReview(null) : setView(id))}>
-                    {label}
-                    {id === "review" && toReview > 0 && <span className="count">{n(toReview)}</span>}
-                  </button>
-                ))}
-              </div>
+            {ready && view !== "review" && (
+              // Trace is one screen; its other pages lead back to it.
+              <button className="back-btn" onClick={() => openReview(null)}>← Back to findings</button>
             )}
           </div>
         )}

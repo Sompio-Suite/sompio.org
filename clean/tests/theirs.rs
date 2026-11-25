@@ -13,7 +13,7 @@ Op ma 1 jan. 2024 om 09:00 schreef Anna <anna@example.org>:\r\n> Mijn telefoon i
         ext_id: "sent".into(),
         name: "Sent mail".into(),
         kind: "posts".into(),
-        messages: vec![LiveMessage { ext_id: mail.id, ts: mail.ts, content: mail.text, link: None }],
+        messages: vec![LiveMessage { ext_id: mail.id, ts: mail.ts, content: mail.text, link: None, thread: Some(mail.thread) }],
     };
     import_live(&mut store, "email", "e", vec![chan]).unwrap();
     let summary = run_scan(&mut store, &ScanOptions::default(), &mut |_, _| {}).unwrap();
@@ -69,4 +69,16 @@ fn gmail_links_survive_plus_signs_and_old_links_are_repaired() {
     // Repairing a correct link changes nothing; other links are left alone.
     assert_eq!(repair_gmail_link(&link).as_deref(), Some(link.as_str()));
     assert_eq!(repair_gmail_link("https://discord.com/channels/1/2/3"), None);
+}
+
+#[test]
+fn replies_belong_to_the_conversation_they_answer() {
+    let first = b"Message-ID: <a1@example.com>\r\nFrom: me@example.org\r\nTo: you@example.org\r\nSubject: Flat\r\nDate: Mon, 3 Mar 2025 10:00:00 +0000\r\n\r\nHi\r\n";
+    let reply = b"Message-ID: <a3@example.com>\r\nIn-Reply-To: <a2@example.com>\r\nReferences: <a1@example.com> <a2@example.com>\r\nFrom: me@example.org\r\nTo: you@example.org\r\nSubject: Re: Flat\r\nDate: Tue, 4 Mar 2025 10:00:00 +0000\r\n\r\nYes\r\n";
+    let takeout = b"X-GM-THRID: 1278455344230334865\r\nMessage-ID: <b1@example.com>\r\nFrom: me@gmail.com\r\nSubject: x\r\nDate: Tue, 4 Mar 2025 10:00:00 +0000\r\n\r\nYes\r\n";
+    assert_eq!(parse_sent_mail(first).unwrap().thread, "a1@example.com");
+    assert_eq!(parse_sent_mail(reply).unwrap().thread, "a1@example.com");
+    let t = parse_sent_mail(takeout).unwrap();
+    assert_eq!(t.thread, "gm:1278455344230334865");
+    assert_eq!(sompio_clean::gmail_open_link(&t.from, t.gmail_thread.unwrap()), "https://mail.google.com/mail/?authuser=me%40gmail.com#all/11bdfc5cae0c8191");
 }

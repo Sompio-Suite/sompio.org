@@ -376,6 +376,7 @@ impl Telegram {
                     ts: m.date().as_millisecond(),
                     content: text,
                     link: linkable.then(|| format!("https://t.me/c/{bare}/{id}")),
+                    thread: None,
                 });
             }
             count += messages.len();

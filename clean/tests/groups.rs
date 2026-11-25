@@ -10,7 +10,7 @@ fn chan(id: &str, msgs: &[&str]) -> LiveChannel {
         messages: msgs
             .iter()
             .enumerate()
-            .map(|(i, t)| LiveMessage { ext_id: format!("{id}/{i}"), ts: 1_700_000_000_000 + i as i64, content: t.to_string(), link: None })
+            .map(|(i, t)| LiveMessage { ext_id: format!("{id}/{i}"), ts: 1_700_000_000_000 + i as i64, content: t.to_string(), link: None, thread: None })
             .collect(),
     }
 }
@@ -83,4 +83,46 @@ fn setup_at(path: &std::path::Path) -> Store {
     import_live(&mut store, "email", "e", vec![chan("sent", &["Phone +31 6 1234 5678", "other: +31 6 87654321"])]).unwrap();
     run_scan(&mut store, &ScanOptions::default(), &mut |_, _| {}).unwrap();
     store
+}
+
+#[test]
+fn a_value_quoted_through_one_email_conversation_is_one_conversation() {
+    let mut store = Store::open_in_memory().unwrap();
+    // The same bank number in a 3-email conversation, and once in another conversation.
+    let mail = |id: &str, thread: &str, ts: i64, subject: &str| LiveMessage {
+        ext_id: id.into(),
+        ts,
+        content: format!("To: a@example.org\nSubject: {subject}\n\nMy account is NL91 ABNA 0417 1643 00 thanks"),
+        link: Some(format!("https://mail.example/{id}")),
+        thread: Some(thread.into()),
+    };
+    let ch = LiveChannel {
+        ext_id: "sent".into(),
+        name: "Sent mail".into(),
+        kind: "posts".into(),
+        messages: vec![
+            mail("a1", "t1", 1_700_000_000_000, "Rent"),
+            mail("a2", "t1", 1_700_000_100_000, "Re: Rent"),
+            mail("a3", "t1", 1_700_000_200_000, "Re: Rent"),
+            mail("b1", "t2", 1_700_000_300_000, "Deposit"),
+        ],
+    };
+    import_live(&mut store, "email", "test", vec![ch]).unwrap();
+    run_scan(&mut store, &ScanOptions::default(), &mut |_, _| {}).unwrap();
+
+    let f = FindingsFilter { kind: Some("iban"), status: StatusFilter::Open, group: true, ..Default::default() };
+    let page = store.findings_filtered(&f, 0, 50, true).unwrap();
+    assert_eq!(page.items.len(), 1, "one row for the number");
+    assert_eq!(page.items[0].repeats, 4);
+    assert_eq!(page.items[0].conversations, 2);
+
+    let g = store.group_info(page.items[0].id, StatusFilter::Open).unwrap();
+    assert_eq!(g.conversations.len(), 2);
+    let rent = g.conversations.iter().find(|c| c.title == "Rent").expect("named after the first email's subject");
+    assert_eq!(rent.count, 3);
+    assert_eq!(rent.link.as_deref(), Some("https://mail.example/a1"), "opens the first email of the conversation");
+
+    let s = store.scan_summary().unwrap();
+    assert_eq!((s.values_total, s.values_open, s.values_done), (s.values_total, s.values_open, s.values_total - s.values_open - s.values_later));
+    assert!(s.by_kind.iter().any(|k| k.kind.key() == "iban" && k.values_open == 1));
 }

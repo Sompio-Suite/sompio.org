@@ -6,7 +6,8 @@ import {
 import { dateTime, n, plural } from "../format";
 import Icon from "../Icon";
 import EmailConnect from "./EmailConnect";
-import ExportRequests from "./ExportRequests";
+import ServiceIcon from "../ServiceIcon";
+import { GetDataHere } from "./Requests";
 import FolderScan from "./FolderScan";
 import TelegramConnect from "./TelegramConnect";
 
@@ -122,10 +123,10 @@ export default function Sources({ demo, onScan, onChanged }: Props) {
     <div className="page">
       <div className="page-head">
         <div>
-          <h1>Sources</h1>
+          <h1>Add a source</h1>
           <p className="muted">
-            Add the export from each platform you use, connect accounts where that's possible, and choose folders on this
-            computer to check. It all lands in one Review list.
+            Pick where your data is. Connect it for results right away, add the file a service sends you, or ask the service
+            for your data first. Everything lands in one list in Trace.
           </p>
         </div>
       </div>
@@ -147,13 +148,19 @@ export default function Sources({ demo, onScan, onChanged }: Props) {
       {note && <p className="small muted">{note}</p>}
 
       <section className="section">
+        <h2 className="section-title">Where's your data?</h2>
+        <GetDataHere onConnect={() => document.getElementById("connect")?.scrollIntoView({ behavior: "smooth" })}
+          onImport={() => document.getElementById("add-more")?.scrollIntoView({ behavior: "smooth" })} />
+      </section>
+
+      <section className="section">
         <h2 className="section-title">Added so far</h2>
         <div className="panel" style={{ padding: "0 1.25rem" }}>
           {sources.length === 0 && <p className="muted" style={{ padding: "1rem 0" }}>Nothing yet.</p>}
           <div className="source-list">
             {sources.map((s) => (
               <div key={s.platform} className="source-row">
-                <span className="step-icon"><Icon name={s.platform === "pc" ? "folder" : s.platform === "email" ? "mail" : "messages"} /></span>
+                <span className="step-icon"><ServiceIcon id={s.platform} size={20} /></span>
                 <div className="text">
                   <strong>{platformName[s.platform]}</strong>
                   <span className="small muted">
@@ -181,7 +188,7 @@ export default function Sources({ demo, onScan, onChanged }: Props) {
       </section>
 
       <section className="section">
-        <h2 className="section-title">Connected accounts</h2>
+        <h2 className="section-title" id="connect">Connected accounts</h2>
         <TelegramConnect
           onStatus={() => onChanged()}
           onSynced={async (count) => {
@@ -207,7 +214,7 @@ export default function Sources({ demo, onScan, onChanged }: Props) {
       </section>
 
       <section className="section">
-        <h2 className="section-title">Add more</h2>
+        <h2 className="section-title" id="add-more">Add a file or folder</h2>
         <div className="add-grid">
           <div className={`panel add-option${over ? " over" : ""}`}>
             <span className="step-icon"><Icon name="sources" /></span>
@@ -239,13 +246,6 @@ export default function Sources({ demo, onScan, onChanged }: Props) {
         <YourNames />
       </section>
 
-      <section className="section">
-        <h2 className="section-title">Getting your exports</h2>
-        <p className="small muted">Ask each platform for your data, tick "I've asked", and Sompio reminds you when it should be ready.</p>
-        <div className="panel" style={{ padding: "0 1.25rem" }}>
-          <ExportRequests />
-        </div>
-      </section>
     </div>
   );
 }

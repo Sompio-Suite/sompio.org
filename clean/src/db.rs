@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS messages (
     ts          INTEGER NOT NULL,         -- unix ms
     content     TEXT NOT NULL,
     attachments TEXT NOT NULL,            -- space-separated URLs; for files, the file's full path
-    link        TEXT                      -- where to open it on the platform, if it has a web address
+    link        TEXT,                     -- where to open it on the platform, if it has a web address
+    thread      TEXT                      -- emails: the conversation it belongs to
 );
 CREATE INDEX IF NOT EXISTS messages_channel_ts ON messages(channel_id, ts, id);
 
@@ -183,6 +184,12 @@ impl Store {
         if !has_theirs {
             // Added in 2.3: older findings count as your own until the next scan sorts them.
             store.conn.execute_batch("ALTER TABLE findings ADD COLUMN theirs INTEGER NOT NULL DEFAULT 0")?;
+        }
+        let has_thread: bool =
+            store.conn.query_row("SELECT COUNT(*) > 0 FROM pragma_table_info('messages') WHERE name = 'thread'", [], |r| r.get(0))?;
+        if !has_thread {
+            // Added in 2.3.7: emails synced before it count as their own conversation until the next sync.
+            store.conn.execute_batch("ALTER TABLE messages ADD COLUMN thread TEXT")?;
         }
         store.conn.execute_batch("CREATE INDEX IF NOT EXISTS findings_fp ON findings(kind, fp)")?;
         store.repair_gmail_links()?;

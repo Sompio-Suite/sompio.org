@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, copyText, openExternal, type PrivacyRequest, type SourceView, type TraceData } from "../api";
 import type { View } from "../App";
 import Icon from "../Icon";
+import ServiceIcon from "../ServiceIcon";
 import {
   EXPORTS, KIND_LABEL, KIND_SHORT, addDays, addMonth, complaintText, daysUntil, letter, loadAuthorities, loadCompanies,
   mailto, niceDate, reminderLetter, searchCompanies, searches, today, type Authority, type Company, type RequestKind,
@@ -27,7 +28,7 @@ const countryName = (() => {
 })();
 
 export default function Requests({ readOnly, onGo }: { readOnly: boolean; onGo: (v: View) => void }) {
-  const [section, setSection] = useState<Section>("get");
+  const [section, setSection] = useState<Section>("ask");
   const [data, setData] = useState<TraceData | null>(null);
   const [sources, setSources] = useState<SourceView[]>([]);
   const [connected, setConnected] = useState<{ telegram: boolean; email: boolean }>({ telegram: false, email: false });
@@ -76,7 +77,6 @@ export default function Requests({ readOnly, onGo }: { readOnly: boolean; onGo: 
   const waiting = data.requests.filter((r) => r.status === "waiting");
   const overdue = waiting.filter((r) => r.sent_on && daysUntil(addMonth(r.sent_on)) < 0).length;
   const nav: [Section, string, string, number | null][] = [
-    ["get", "Get your data", "sources", null],
     ["find", "Find it now", "search", null],
     ["ask", "Ask a company", "mail", null],
     ["track", "Your requests", "clock", data.requests.length || null],
@@ -103,7 +103,7 @@ export default function Requests({ readOnly, onGo }: { readOnly: boolean; onGo: 
         </aside>
         <div className="req-pane">
           {section === "get" && (
-            <GetData data={data} sources={sources} connected={connected} onGo={onGo} remind={reminder} save={save} />
+            <GetData data={data} sources={sources} connected={connected} onConnect={() => onGo("sources")} onImport={() => onGo("sources")} remind={reminder} save={save} />
           )}
           {section === "find" && <FindNow data={data} terms={terms} save={save} onGo={onGo} />}
           {section === "ask" && (
@@ -129,14 +129,63 @@ type Remind = (date: string, title: string, text: string) => Promise<string>;
 
 // ---------- Get your data ----------
 
+/** "Where's your data?" on the Add a source page: loads what it needs itself. */
+export function GetDataHere({ onConnect, onImport }: { onConnect: () => void; onImport: () => void }) {
+  const [data, setData] = useState<TraceData | null>(null);
+  const [sources, setSources] = useState<SourceView[]>([]);
+  const [connected, setConnected] = useState<{ telegram: boolean; email: boolean }>({ telegram: false, email: false });
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    api.traceData().then((d) => setData({ ...EMPTY, ...d, profile: { ...EMPTY.profile, ...d.profile, handles: d.profile?.handles ?? {} } })).catch(() => setData(EMPTY));
+    api.sources().then(setSources).catch(() => {});
+    Promise.all([api.tgStatus().catch(() => null), api.emailStatus().catch(() => null)]).then(([t, e]) =>
+      setConnected({ telegram: !!t?.connected, email: !!e?.connected }),
+    );
+  }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [toast]);
+  if (!data) return null;
+  const save: Save = async (next, text) => {
+    try {
+      await api.traceSave(next);
+      setData(next);
+      if (text) setToast(text);
+    } catch (e) {
+      setToast(String(e));
+    }
+  };
+  const remind: Remind = async (date, title, text) => {
+    try {
+      await api.traceRemind(date, title, text);
+      return ` Sompio will remind you on ${niceDate(date)}.`;
+    } catch {
+      return "";
+    }
+  };
+  return (
+    <>
+      <GetData data={data} sources={sources} connected={connected} onConnect={onConnect} onImport={onImport} remind={remind} save={save} />
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          <span>{toast}</span>
+          <button className="toast-close" aria-label="Dismiss" onClick={() => setToast(null)}>×</button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function GetData(p: {
   data: TraceData; sources: SourceView[]; connected: { telegram: boolean; email: boolean };
-  onGo: (v: View) => void; remind: Remind; save: Save;
+  onConnect: () => void; onImport: () => void; remind: Remind; save: Save;
 }) {
   const imported = new Set(p.sources.map((s) => s.platform));
   const asked = async (key: string, name: string, days: number) => {
     const on = today();
-    const extra = days > 0 ? await p.remind(addDays(on, days), `Check your ${name} data`, `Your ${name} data export should be ready. Download it and import it in Trace, under Sources.`) : "";
+    const extra = days > 0 ? await p.remind(addDays(on, days), `Check your ${name} data`, `Your ${name} data export should be ready. Download it and add it in Trace, under Add a source.`) : "";
     p.save({ ...p.data, exports: { ...p.data.exports, [key]: { requested_on: on } } }, `Noted.${extra}`);
   };
   const undo = (key: string) => {
@@ -146,14 +195,10 @@ function GetData(p: {
   };
   return (
     <div className="req-section">
-      <header>
-        <h2>Get your data</h2>
-        <p className="muted">
-          Every platform must give you a copy of what it holds about you. Ask for it on each platform you use, then import the download
-          under <button className="link" onClick={() => p.onGo("sources")}>Sources</button>. Most arrive within days. Telegram and email can be
-          connected for results right away.
-        </p>
-      </header>
+      <p className="muted small">
+        Every service must give you a copy of what it holds about you. Email and Telegram can be connected straight away; for the
+        others, ask for your data, and Sompio reminds you when it should be ready to add.
+      </p>
       <div className="req-list">
         {EXPORTS.map((e) => {
           const done = imported.has(e.platform);
@@ -164,6 +209,7 @@ function GetData(p: {
             <div key={e.key} className={`req-row${done ? " is-done" : ""}`}>
               <div className="req-main">
                 <div className="req-title">
+                  <ServiceIcon id={e.key === "gmail" ? "gmail" : e.platform} size={18} name={e.name} />
                   <strong>{e.name}</strong>
                   {done && <span className="state ok"><Icon name="check" size={13} />Imported</span>}
                   {isOn && <span className="state ok"><Icon name="check" size={13} />Connected</span>}
@@ -178,7 +224,10 @@ function GetData(p: {
               </div>
               <div className="req-actions">
                 {e.live && !isOn && (
-                  <button className="primary" onClick={() => p.onGo("sources")}><Icon name="arrow" size={16} />Connect now</button>
+                  <button className="primary" onClick={p.onConnect}><Icon name="arrow" size={16} />Connect now</button>
+                )}
+                {!e.live && on && !done && (
+                  <button className="primary" onClick={p.onImport}><Icon name="arrow" size={16} />Add the file</button>
                 )}
                 {e.url && (
                   <button onClick={() => openExternal(e.url!)}><Icon name="external" size={16} />Open the page</button>
@@ -188,7 +237,7 @@ function GetData(p: {
                 ) : (
                   <button onClick={() => asked(e.key, e.name, e.days)}><Icon name="check" size={16} />I asked for it</button>
                 ))}
-                {done && <button className="quiet" onClick={() => p.onGo("sources")}>Sources</button>}
+
               </div>
             </div>
           );

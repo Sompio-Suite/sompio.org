@@ -14,7 +14,9 @@ use imap::{ClientBuilder, ConnectionMode, Connection, Session};
 use imap_proto::NameAttribute;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use sompio_clean::{gmail_link, parse_sent_mail, LiveChannel, LiveMessage};
+use std::collections::HashMap;
+
+use sompio_clean::{gmail_link, gmail_open_link, parse_sent_mail, LiveChannel, LiveMessage};
 
 const KEY_ACCOUNT: &str = "email.account";
 /// Only the first part of each email is downloaded: the text comes first, attachments after.
@@ -237,6 +239,8 @@ impl Email {
         let mut messages = Vec::with_capacity(total);
         for (i, chunk) in uids.chunks(BATCH).enumerate() {
             let set = chunk.iter().map(u32::to_string).collect::<Vec<_>>().join(",");
+            // Gmail's own IDs for each email and its conversation: links built from them always open.
+            let gm = if gmail { gmail_ids(&mut s, &set) } else { HashMap::new() };
             let fetches = s.uid_fetch(&set, format!("(UID BODY.PEEK[]<0.{MAX_BYTES}>)")).map_err(friendly)?;
             for f in fetches.iter() {
                 let (Some(uid), Some(raw)) = (f.uid, f.body()) else { continue };
@@ -244,8 +248,16 @@ impl Email {
                 if !m.id.contains('@') {
                     m.id = format!("imap:{validity}:{uid}");
                 }
-                let link = (gmail && !m.id.starts_with("imap:")).then(|| gmail_link(&m.id));
-                messages.push(LiveMessage { ext_id: m.id, ts: m.ts, content: m.text, link });
+                let ids = gm.get(&uid).copied();
+                let link = match ids {
+                    Some((msg, _)) => Some(gmail_open_link(&a.address, msg)),
+                    None => (gmail && !m.id.starts_with("imap:")).then(|| gmail_link(&m.id)),
+                };
+                let thread = match ids {
+                    Some((_, t)) => format!("gm:{t}"),
+                    None => m.thread,
+                };
+                messages.push(LiveMessage { ext_id: m.id, ts: m.ts, content: m.text, link, thread: Some(thread) });
             }
             progress(SyncProgress { done: ((i + 1) * BATCH).min(total), total });
         }
@@ -328,5 +340,49 @@ mod tests {
     fn _send_check() {
         fn is_send<T: Send>() {}
         is_send::<Email>();
+    }
+}
+
+/// Asks Gmail for its own message and conversation IDs (X-GM-MSGID, X-GM-THRID) of these emails.
+/// Empty if the server doesn't answer; the links then fall back to searching by Message-ID.
+fn gmail_ids(s: &mut Imap, uids: &str) -> HashMap<u32, (u64, u64)> {
+    let Ok(raw) = s.run_command_and_read_response(format!("UID FETCH {uids} (UID X-GM-MSGID X-GM-THRID)")) else {
+        return HashMap::new();
+    };
+    parse_gmail_ids(&String::from_utf8_lossy(&raw))
+}
+
+/// Reads lines like `* 3 FETCH (X-GM-THRID 1278455344230334865 X-GM-MSGID 1278455344230334865 UID 4)`.
+pub fn parse_gmail_ids(text: &str) -> HashMap<u32, (u64, u64)> {
+    let mut out = HashMap::new();
+    for line in text.lines() {
+        let words: Vec<&str> = line.split(|c: char| c.is_whitespace() || c == '(' || c == ')').filter(|w| !w.is_empty()).collect();
+        let after = |key: &str| words.iter().position(|w| w.eq_ignore_ascii_case(key)).and_then(|i| words.get(i + 1));
+        let (Some(uid), Some(msg), Some(thr)) = (
+            after("UID").and_then(|v| v.parse::<u32>().ok()),
+            after("X-GM-MSGID").and_then(|v| v.parse::<u64>().ok()),
+            after("X-GM-THRID").and_then(|v| v.parse::<u64>().ok()),
+        ) else {
+            continue;
+        };
+        out.insert(uid, (msg, thr));
+    }
+    out
+}
+
+#[cfg(test)]
+mod gmail_id_tests {
+    use super::parse_gmail_ids;
+
+    #[test]
+    fn reads_gmail_ids_in_any_order() {
+        let ids = parse_gmail_ids(
+            "* 1 FETCH (X-GM-THRID 1278455344230334865 X-GM-MSGID 1278455344230334865 UID 4)\r\n\
+             * 2 FETCH (UID 9 X-GM-MSGID 1278455344230334999 X-GM-THRID 1278455344230334865)\r\n\
+             A3 OK Success\r\n",
+        );
+        assert_eq!(ids.get(&4), Some(&(1278455344230334865, 1278455344230334865)));
+        assert_eq!(ids.get(&9), Some(&(1278455344230334999, 1278455344230334865)));
+        assert_eq!(ids.len(), 2);
     }
 }

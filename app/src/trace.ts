@@ -71,8 +71,8 @@ export interface ExportInfo {
 
 export const EXPORTS: ExportInfo[] = [
   { key: "discord", platform: "discord", name: "Discord", how: "In the Discord app: User Settings → Data & Privacy → Request all of my data.", wait: "Up to 30 days, often sooner", days: 30 },
-  { key: "telegram", platform: "telegram", name: "Telegram", how: "In Telegram Desktop: Settings → Advanced → Export Telegram data (JSON). Or connect Telegram under Sources for results right away.", wait: "Right away", days: 0, live: true },
-  { key: "gmail", platform: "email", name: "Gmail and other email", how: "Connect your mailbox under Sources for results right away, or download your mail from Google Takeout.", url: "https://takeout.google.com", wait: "Right away when connected; Takeout takes hours to days", days: 2, live: true },
+  { key: "telegram", platform: "telegram", name: "Telegram", how: "In Telegram Desktop: Settings → Advanced → Export Telegram data (JSON). Or connect Telegram below for results right away.", wait: "Right away", days: 0, live: true },
+  { key: "gmail", platform: "email", name: "Gmail and other email", how: "Connect your mailbox below for results right away, or download your mail from Google Takeout.", url: "https://takeout.google.com", wait: "Right away when connected; Takeout takes hours to days", days: 2, live: true },
   { key: "reddit", platform: "reddit", name: "Reddit", how: "Ask for your data on Reddit's data request page.", url: "https://www.reddit.com/settings/data-request", wait: "Up to 30 days", days: 30 },
   { key: "x", platform: "x", name: "X (Twitter)", how: "Settings → Your account → Download an archive of your data.", url: "https://x.com/settings/download_your_data", wait: "24 hours or longer", days: 2 },
   { key: "facebook", platform: "facebook", name: "Facebook", how: "Accounts Center → Your information and permissions → Download your information. Choose JSON.", url: "https://accountscenter.facebook.com/info_and_permissions/dyi", wait: "Minutes to a few days", days: 3 },
