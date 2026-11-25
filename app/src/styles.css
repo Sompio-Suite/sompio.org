@@ -252,7 +252,7 @@ input::placeholder { color: var(--ink-3); }
 .rail-foot strong { display: block; color: var(--ink); font-size: var(--t-s); }
 
 main { overflow: auto; min-width: 0; display: flex; flex-direction: column; }
-.page { padding: 2.6rem 3rem 3rem; display: flex; flex-direction: column; gap: 2rem; width: 100%; max-width: 1180px; }
+.page { padding: 2.6rem 3rem 3rem; display: flex; flex-direction: column; gap: 2rem; width: 100%; }
 .page.full { flex: 1; min-height: 0; padding-bottom: 1.25rem; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; }
 .page-head > div { display: grid; gap: 0.5rem; }
@@ -862,7 +862,7 @@ textarea {
 }
 textarea:focus-visible { outline-offset: 0; border-color: var(--accent); }
 .ok-text { color: var(--ok); font-weight: 600; }
-.vault-page { gap: 1.25rem; max-width: 1400px; }
+.vault-page { gap: 1.25rem; }
 .vault-page > .segmented { align-self: flex-start; }
 .vault-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 210px minmax(260px, 1fr) minmax(320px, 1.25fr); gap: 1rem; }
 @media (max-width: 1150px) { .vault-layout { flex: none; grid-template-columns: 180px 1fr; grid-template-rows: minmax(340px, 58vh) auto; } .entry-detail { grid-column: 1 / -1; } }
@@ -969,7 +969,7 @@ input.shortcut-input { width: 13rem; text-align: center; cursor: pointer; }
 .chooser .entry-row:focus-visible { background: var(--nav-active); }
 
 /* App header with tabs (Clean) */
-.app-head { display: grid; gap: 1.1rem; padding: 2.2rem 3rem 0; max-width: 1180px; width: 100%; }
+.app-head { display: grid; gap: 1.1rem; padding: 2.2rem 3rem 0; width: 100%; }
 .app-title { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
 .app-title h1 { font-size: var(--t-xl); }
 .app-head .segmented { justify-self: start; }
@@ -1002,7 +1002,7 @@ input.shortcut-input { width: 13rem; text-align: center; cursor: pointer; }
 .lock-step .segmented { justify-self: start; width: auto; }
 
 /* ---------- Voice ---------- */
-.voice-page { gap: 1.25rem; max-width: 1400px; }
+.voice-page { gap: 1.25rem; }
 .voice-lobby { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
 .voice-card { padding: 1.25rem 1.4rem; display: grid; gap: 0.9rem; }
 .voice-card h2 { font-size: 1.15rem; }
