@@ -93,7 +93,12 @@ where
         };
         let mut guard = state.passwords.open.lock().map_err(err)?;
         if guard.is_none() {
-            *guard = Some(Vault::open(&path, &key).map_err(err)?);
+            let mut v = Vault::open(&path, &key).map_err(err)?;
+            // Logins the browser saved while it was locked move in now, and the browser keeps what
+            // it needs to save while locked next time.
+            crate::browser::merge_inbox(&app, &mut v);
+            crate::browser::mirror(&app, &mut v);
+            *guard = Some(v);
         }
         f(guard.as_mut().expect("opened above")).map_err(err)
     })

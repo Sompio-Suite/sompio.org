@@ -1,3 +1,4 @@
+import StartWithComputer from "../StartWithComputer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api, platformName, copyText, listen, openExternal, pickOpen, pickSave,
@@ -487,6 +488,7 @@ function BrowserSettings({ s, save, onDone }: { s: VaultSettings; save: (n: Vaul
       </label>
       {s.browser && (
         <>
+          <StartWithComputer hint="The extension needs Sompio running. With this on, Sompio starts locked in the tray, so your logins are one unlock away." />
           <div className="browser-steps">
             <p><strong>Add it to your browser</strong></p>
             <ol className="small">

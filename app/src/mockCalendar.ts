@@ -42,7 +42,7 @@ let settings: CalSettings = {
   corner: "bottom-right", popup_seconds: 25, discreet: false, hide_from_capture: true,
 };
 const alerts = new Map<string, string>(); // key|date -> mode
-let autostart = true;
+let autostart = false;
 let paused: string | null = null;
 
 const pad = (n: number) => String(n).padStart(2, "0");

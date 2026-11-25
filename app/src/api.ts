@@ -323,6 +323,7 @@ export const api = {
   calPopupAction: (id: number, action: "done" | "snooze" | "close-all", minutes?: number) => call<void>("cal_popup_action", { id, action, minutes: minutes ?? null }),
   calPause: (minutes: number | null) => call<string | null>("cal_pause", { minutes }),
   calPaused: () => call<string | null>("cal_paused"),
+  /** Whether Sompio starts (locked, in the tray) when the computer starts */
   calAutostart: () => call<boolean>("cal_autostart"),
   calSetAutostart: (on: boolean) => call<void>("cal_set_autostart", { on }),
   vaultGroups: () => call<VaultGroup[]>("vault_groups"),

@@ -170,6 +170,22 @@ export default function App() {
     setTraceData(null);
     setVersion((v) => v + 1);
   }, []);
+  // Logins the browser extension saved while Sompio was locked, now in the Vault
+  const [inboxNote, setInboxNote] = useState<string | null>(null);
+  useEffect(() => {
+    const un = listen<{ added: number; updated: number }>("vault-inbox", (e) => {
+      const { added, updated } = e;
+      const parts = [added ? `${added} new ${added === 1 ? "login" : "logins"}` : "", updated ? `${updated} new ${updated === 1 ? "password" : "passwords"}` : ""].filter(Boolean);
+      setInboxNote(`Added to your Vault from your browser: ${parts.join(" and ")}.`);
+    });
+    return () => { un.then((f) => f()); };
+  }, []);
+  useEffect(() => {
+    if (!inboxNote) return;
+    const t = window.setTimeout(() => setInboxNote(null), 8000);
+    return () => window.clearTimeout(t);
+  }, [inboxNote]);
+
   // "Lock Sompio" in the tray menu
   useEffect(() => {
     const un = listen("locked", () => lockNow());
@@ -188,11 +204,14 @@ export default function App() {
     const seen = () => { last = Date.now(); };
     const events = ["mousemove", "keydown", "mousedown", "wheel", "touchstart"];
     events.forEach((e) => window.addEventListener(e, seen, { passive: true }));
+    // Filling or saving a login with the browser extension counts too.
+    const used = listen("vault-used", seen);
     const timer = window.setInterval(() => {
       if (Date.now() - last > idleMinutes * 60_000) lockNow();
     }, 20_000);
     return () => {
       events.forEach((e) => window.removeEventListener(e, seen));
+      used.then((f) => f());
       window.clearInterval(timer);
     };
   }, [unlocked, idleMinutes, lockNow]);
@@ -229,7 +248,7 @@ export default function App() {
     <LockScreen key={`${lock.set_up}-${reason}`} status={lock} reason={reason} onUnlocked={async () => setLock(await api.lockStatus())} />
   );
 
-  const toReview = scan ? scan.open : 0;
+  const toReview = scan ? scan.values_open ?? scan.open : 0;
   // A paid pass running out soon: a reminder at the top, at most once a day once closed
   const ending = passEnding(licence);
   const today = new Date().toDateString();
@@ -318,8 +337,8 @@ export default function App() {
           <button className="nav ext" title="See Sompio's code on GitHub (opens in your browser)" aria-label="GitHub" onClick={() => openExternal(SOURCE_URL).catch(() => {})}>
             <Icon name="code" /><span className="label">GitHub</span>
           </button>
-          <button className="nav ext" title="Documentation: how Sompio works, in plain words (opens in your browser)" aria-label="Documentation" onClick={() => openExternal(DOCS_URL).catch(() => {})}>
-            <Icon name="book" /><span className="label">Docs</span>
+          <button className="nav ext" title="About Sompio: how it works and how to use it, in plain words (opens in your browser)" aria-label="About Sompio" onClick={() => openExternal(DOCS_URL).catch(() => {})}>
+            <Icon name="book" /><span className="label">About</span>
           </button>
         </nav>
         <div className="bar-tools">
@@ -459,6 +478,12 @@ export default function App() {
         )}
         {inClean && (!unlocked ? gate("Trace") : ready === null ? null : cleanPage())}
       </main>
+      {inboxNote && (
+        <div className="toast" role="status" aria-live="polite">
+          <span>{inboxNote}</span>
+          <button className="toast-close" aria-label="Dismiss" onClick={() => setInboxNote(null)}>×</button>
+        </div>
+      )}
       {update && updatePopup && !pairAsk && (
         <div className="update-card" role="status" aria-labelledby="update-title">
           <div className="update-card-head">

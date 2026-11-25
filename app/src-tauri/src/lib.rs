@@ -32,6 +32,11 @@ struct AppState {
     passwords: vault::VaultState,
     /// The browser extension's pairing requests
     browser: browser::Bridge,
+    /// The computer's own secure storage (Credential Manager, Keychain): what the extension needs
+    /// to save logins while Sompio is locked, never anything that opens the vault
+    keyring: Arc<dyn sompio_connect::SecretStore>,
+    /// Sompio's data folder on this computer
+    data_dir: std::path::PathBuf,
 }
 
 type CmdResult<T> = Result<T, String>;
@@ -829,6 +834,7 @@ pub fn run() {
             std::fs::create_dir_all(&dir)?;
             problems::start(&dir);
             let secrets = std::sync::Arc::new(sompio_connect::KeyringStore::new("Sompio"));
+            let keyring: Arc<dyn sompio_connect::SecretStore> = secrets.clone();
             move_from_veil(&dir, &dir.join("clean.db"));
             app.manage(AppState {
                 licences: Licences::load(dir.join("licences.json")),
@@ -838,6 +844,8 @@ pub fn run() {
                 calendar: calendar::Calendar::new(),
                 passwords: vault::VaultState::new(&dir),
                 browser: browser::Bridge::default(),
+                keyring: keyring.clone(),
+                data_dir: dir.clone(),
             });
             // The browser extension: a local pipe, and the browsers told where Sompio is
             browser::start(app.handle().clone());
@@ -853,10 +861,20 @@ pub fn run() {
             }
             calendar::tray(app.handle())?;
             calendar::start(app.handle().clone());
+            // Started with the computer: stay in the tray, locked, until you open Sompio. Otherwise
+            // show the window (it starts hidden so it never flashes up at login).
+            let at_login = std::env::args().any(|a| a == "--autostart");
+            if let Some(w) = app.get_webview_window("main") {
+                if !at_login {
+                    w.show()?;
+                    let _ = w.set_focus();
+                }
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Closing the main window keeps Sompio in the tray while reminders are loaded.
+            // Closing the main window keeps Sompio in the tray when the browser extension or starting
+            // with the computer is on, so the extension keeps working. "Quit Sompio" in the tray quits.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" && calendar::keeps_running(window.app_handle()) {
                     api.prevent_close();

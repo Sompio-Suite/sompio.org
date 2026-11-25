@@ -465,5 +465,9 @@ fn update_tray(app: &AppHandle) {
 
 /// Closing the window keeps Sompio in the tray while there are reminders to show.
 pub fn keeps_running(app: &AppHandle) -> bool {
-    app.try_state::<AppState>().is_some_and(|s| s.calendar.reminders.lock().map(|r| r.has_data()).unwrap_or(false))
+    use tauri_plugin_autostart::ManagerExt;
+    let Some(s) = app.try_state::<AppState>() else { return false };
+    s.calendar.reminders.lock().map(|r| r.has_data()).unwrap_or(false)
+        || s.passwords.settings.lock().map(|v| v.browser).unwrap_or(false)
+        || app.autolaunch().is_enabled().unwrap_or(false)
 }

@@ -7,6 +7,7 @@ pub mod csvfile;
 pub mod generator;
 pub mod health;
 pub mod icons;
+pub mod inbox;
 pub mod leaks;
 pub mod samples;
 pub mod store;

@@ -1,2 +1,4 @@
-Pages now use the full width of the window.
-In Trace, drag the line between the list and the details to make either one bigger. Double-click it to reset.
+The browser extension can now save a new login while Sompio is locked. It's added to your Vault the next time you unlock. Saved logins can still only be filled while Sompio is unlocked.
+Using the browser extension now counts as using Sompio, so it doesn't lock itself while you're busy in your browser. You can also choose to lock after 4 or 8 hours.
+New: Start Sompio when my computer starts (under Security, and in Vault's extension settings). It waits locked in the tray.
+Docs is now called About.

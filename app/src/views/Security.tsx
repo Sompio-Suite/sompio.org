@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, listen, passwordProblem, pickPicture, pickPictureSave, type LockStatus } from "../api";
 import Icon from "../Icon";
+import StartWithComputer from "../StartWithComputer";
 import { autoCheckEnabled, checkForUpdate, currentVersion, setAutoCheck, updatesOn, type UpdateInfo } from "../updates";
 
 interface Props {
@@ -83,10 +84,15 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
       {status.set_up && <>
       <section className="setting">
         <h3>Lock when I'm away</h3>
-        <p className="muted">Vault and Trace lock themselves after this long without you using Sompio. Deadline reminders keep coming.</p>
+        <p className="muted">
+          Vault and Trace lock themselves after this long without you using Sompio. Filling or saving a login with the browser extension
+          counts as using it. Logins you save in your browser while Sompio is locked are added the next time you unlock.
+        </p>
         <select value={idleMinutes} onChange={(e) => onIdleMinutes(Number(e.target.value))}>
           {[5, 15, 30, 60].map((m) => <option key={m} value={m}>After {m} minutes</option>)}
-          <option value={0}>Only when I close it</option>
+          <option value={240}>After 4 hours</option>
+          <option value={480}>After 8 hours</option>
+          <option value={0}>Only when I lock it or quit Sompio</option>
         </select>
       </section>
 
@@ -149,6 +155,11 @@ export default function Security({ status, idleMinutes, onIdleMinutes, onLockNow
       </>}
 
       {note && <div className={note.ok ? "success" : "error"} role="status">{note.text}</div>}
+
+      <section className="setting">
+        <h3>Starting Sompio</h3>
+        <StartWithComputer />
+      </section>
 
       <section className="setting">
         <h3>Updates</h3>

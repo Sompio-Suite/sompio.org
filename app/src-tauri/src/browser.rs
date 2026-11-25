@@ -15,7 +15,7 @@ use aes_gcm::{Aes256Gcm, Nonce};
 use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine;
 use rand::RngCore;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use sompio_licence::App;
@@ -144,11 +144,14 @@ async fn pair(app: &AppHandle, msg: &Value) -> Value {
     }
     let now = now_ms();
     let client = BrowserClient { id: id.clone(), key, browser: ask.browser, added: now, last_used: now };
+    let me = app.clone();
     let saved = crate::vault::with_vault(app, move |v| {
         let mut all = v.browser_clients();
         all.retain(|c| c.id != client.id);
         all.push(client);
-        v.set_browser_clients(&all)
+        v.set_browser_clients(&all)?;
+        mirror(&me, v);
+        Ok(())
     })
     .await;
     match saved {
@@ -170,17 +173,29 @@ async fn call(app: &AppHandle, msg: &Value) -> Value {
     if !enabled(app) {
         return error("off", "The browser extension is turned off in Sompio.");
     }
-    if !unlocked(app) {
-        return error("locked", "Sompio is locked.");
-    }
     let id = msg.get("id").and_then(Value::as_str).unwrap_or("").to_string();
-    let lookup = id.clone();
-    let client = match crate::vault::with_vault(app, move |v| Ok(v.browser_clients().into_iter().find(|c| c.id == lookup))).await {
-        Ok(Some(c)) => c,
-        Ok(None) => return error("not_paired", "This browser isn't paired with Sompio."),
-        Err(e) => return error("locked", &e),
+    // Locked: a paired browser may still save a login (into the locked inbox), nothing else.
+    let locked = !unlocked(app);
+    let (client, key, inbox_key) = if locked {
+        let Some(access) = locked_access(app) else { return error("locked", "Sompio is locked.") };
+        let Some((_, k)) = access.clients.iter().find(|(cid, _)| *cid == id) else { return error("locked", "Sompio is locked.") };
+        let Ok(key) = B64.decode(k).map_err(|_| ()).and_then(|k| <[u8; 32]>::try_from(k).map_err(|_| ())) else {
+            return error("locked", "Sompio is locked.");
+        };
+        let Ok(pk) = B64.decode(&access.pk).map_err(|_| ()).and_then(|k| <[u8; 32]>::try_from(k).map_err(|_| ())) else {
+            return error("locked", "Sompio is locked.");
+        };
+        (None, key, Some(pk))
+    } else {
+        let lookup = id.clone();
+        let client = match crate::vault::with_vault(app, move |v| Ok(v.browser_clients().into_iter().find(|c| c.id == lookup))).await {
+            Ok(Some(c)) => c,
+            Ok(None) => return error("not_paired", "This browser isn't paired with Sompio."),
+            Err(e) => return error("locked", &e),
+        };
+        let Ok(key) = key_of(&client) else { return error("not_paired", "This browser's pairing is damaged. Pair it again.") };
+        (Some(client), key, None)
     };
-    let Ok(key) = key_of(&client) else { return error("not_paired", "This browser's pairing is damaged. Pair it again.") };
     let (iv, data) = (msg.get("iv").and_then(Value::as_str).unwrap_or(""), msg.get("data").and_then(Value::as_str).unwrap_or(""));
     let Some(plain) = open(&key, &format!("sompio-req:{id}"), iv, data) else {
         return error("not_paired", "This browser's pairing no longer matches. Pair it again.");
@@ -205,12 +220,23 @@ async fn call(app: &AppHandle, msg: &Value) -> Value {
     }
     let method = req.get("m").and_then(Value::as_str).unwrap_or("").to_string();
     let args = req.get("a").cloned().unwrap_or(Value::Null);
-    let body = match run(app, &method, &args).await {
+    let result = match inbox_key {
+        Some(pk) if method == "save" => save_locked(app, &pk, &args),
+        // Making up a password reads nothing from the vault
+        Some(_) if method == "generate" => run(app, &method, &args).await,
+        Some(_) => return error("locked", "Sompio is locked."),
+        None => {
+            // Using the extension counts as using Sompio, for locking when you're away.
+            let _ = app.emit("vault-used", ());
+            run(app, &method, &args).await
+        }
+    };
+    let body = match result {
         Ok(r) => json!({ "n": nonce, "ok": true, "r": r }),
         Err(e) => json!({ "n": nonce, "ok": false, "error": e }),
     };
     // Remember when it was last used, at most once an hour (each save rewrites the vault)
-    if now - client.last_used > 3_600_000 {
+    if let Some(client) = client.filter(|c| now - c.last_used > 3_600_000) {
         let cid = client.id.clone();
         let _ = crate::vault::with_vault(app, move |v| {
             let mut all = v.browser_clients();
@@ -221,6 +247,75 @@ async fn call(app: &AppHandle, msg: &Value) -> Value {
     }
     let (iv, data) = seal(&key, &format!("sompio-res:{id}"), body.to_string().as_bytes());
     json!({ "type": "reply", "iv": iv, "data": data })
+}
+
+// ---------- Saving while locked ----------
+
+const LOCKED_KEY: &str = "browser-locked";
+
+/// What a locked Sompio needs to accept a save: the paired browsers' keys and the inbox's public
+/// key. Kept in the computer's secure storage; none of it can open the vault or read a login.
+#[derive(Serialize, Deserialize, Default)]
+struct LockedAccess {
+    pk: String,
+    clients: Vec<(String, String)>,
+}
+
+fn locked_access(app: &AppHandle) -> Option<LockedAccess> {
+    let s = app.state::<AppState>().keyring.get(LOCKED_KEY).ok()??;
+    serde_json::from_str(&s).ok()
+}
+
+/// Updates that copy. Called whenever the vault opens and when browsers are paired or removed.
+pub(crate) fn mirror(app: &AppHandle, v: &mut sompio_vault::Vault) {
+    let state = app.state::<AppState>();
+    let clients = v.browser_clients();
+    if clients.is_empty() {
+        let _ = state.keyring.delete(LOCKED_KEY);
+        return;
+    }
+    let Ok(pk) = v.inbox_public_key() else { return };
+    let access = LockedAccess { pk: B64.encode(pk), clients: clients.into_iter().map(|c| (c.id, c.key)).collect() };
+    if let Ok(s) = serde_json::to_string(&access) {
+        if let Err(e) = state.keyring.set(LOCKED_KEY, &s) {
+            eprintln!("Browser extension: couldn't keep the pairing for saving while locked: {e}");
+        }
+    }
+}
+
+fn inbox_path(app: &AppHandle) -> std::path::PathBuf {
+    app.state::<AppState>().data_dir.join("browser-inbox.jsonl")
+}
+
+/// A login saved while locked: locked away in the inbox, readable only once the vault is open.
+fn save_locked(app: &AppHandle, pk: &[u8; 32], a: &Value) -> Result<Value, String> {
+    app.state::<AppState>().licences.require(App::Vault)?;
+    let (url, password) = (arg(a, "url"), arg(a, "password"));
+    if password.is_empty() || sompio_vault::browser::host_of(&url).is_none() {
+        return Err("Only logins on websites can be saved.".into());
+    }
+    let item = sompio_vault::inbox::InboxItem { url, title: arg(a, "title"), username: arg(a, "username"), password, at: now_ms() };
+    let line = sompio_vault::inbox::seal(pk, &item).map_err(|e| e.to_string())?;
+    use std::io::Write;
+    let mut f = std::fs::OpenOptions::new().create(true).append(true).open(inbox_path(app)).map_err(|e| e.to_string())?;
+    writeln!(f, "{line}").map_err(|e| e.to_string())?;
+    Ok(json!({ "id": "", "inbox": true }))
+}
+
+/// Moves logins saved while locked into the vault, now that it's open.
+pub(crate) fn merge_inbox(app: &AppHandle, v: &mut sompio_vault::Vault) {
+    let path = inbox_path(app);
+    let Ok(text) = std::fs::read_to_string(&path) else { return };
+    match v.merge_inbox(&text) {
+        Ok(r) => {
+            let _ = std::fs::remove_file(&path);
+            if r.added + r.updated > 0 {
+                let _ = app.emit("vault-inbox", json!({ "added": r.added, "updated": r.updated }));
+                let _ = app.emit("vault-changed", ());
+            }
+        }
+        Err(e) => eprintln!("Browser extension: couldn't add the logins saved while locked: {e}"),
+    }
 }
 
 fn arg(a: &Value, k: &str) -> String {
@@ -302,10 +397,13 @@ pub async fn browser_clients(app: AppHandle) -> CmdResult<Vec<ClientView>> {
 
 #[tauri::command]
 pub async fn browser_forget(app: AppHandle, id: String) -> CmdResult<()> {
+    let me = app.clone();
     crate::vault::with_vault(&app, move |v| {
         let mut all = v.browser_clients();
         all.retain(|c| c.id != id);
-        v.set_browser_clients(&all)
+        v.set_browser_clients(&all)?;
+        mirror(&me, v);
+        Ok(())
     })
     .await
 }

@@ -1021,6 +1021,7 @@ impl Vault {
         copy.meta.generator = Some("Sompio".into());
         // The keys of paired browsers stay on this computer
         copy.meta.custom_data.remove(crate::browser::CLIENTS_KEY);
+        copy.meta.custom_data.remove(crate::inbox::INBOX_KEY);
         let mut buf = Vec::new();
         copy.save(&mut buf, user_key(password, keyfile)?).map_err(|e| anyhow!("Couldn't write the file: {e}"))?;
         std::fs::write(dest, buf)?;

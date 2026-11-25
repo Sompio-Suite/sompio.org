@@ -940,7 +940,7 @@ button.quiet.danger { color: var(--risk-high); }
 .more-fields { display: grid; gap: 1rem; margin-top: 0.8rem; }
 input.shortcut-input { width: 13rem; text-align: center; cursor: pointer; }
 
-.health { display: grid; gap: 1rem; max-width: 900px; }
+.health { display: grid; gap: 1rem; }
 .health-top { padding: 1.25rem 1.4rem; display: grid; grid-template-columns: auto 1fr; gap: 0.9rem 1.75rem; align-items: center; }
 .health-top > p { grid-column: 1 / -1; }
 .health-score { width: 104px; height: 104px; border-radius: 50%; display: grid; place-content: center; text-align: center; border: 5px solid var(--ok); }
@@ -1297,7 +1297,7 @@ svg.logo { display: block; }
 .requests-page .xc-body { grid-template-columns: 210px 1fr; }
 .requests-page .xc-node { padding: 0.4rem 0.6rem; }
 .req-pane { overflow: auto; min-width: 0; }
-.req-section { display: grid; gap: 1rem; padding: 1.2rem 1.6rem 2rem; max-width: 980px; }
+.req-section { display: grid; gap: 1rem; padding: 1.2rem 1.6rem 2rem; }
 .req-section > header { display: grid; gap: 0.45rem; }
 .req-section > header p { max-width: 75ch; }
 .req-section h2 { font-size: var(--t-l, 1.15rem); }
@@ -1610,3 +1610,6 @@ button.progress-link:hover { background: var(--hover); }
 .xc-split { cursor: row-resize; background: var(--line); position: relative; touch-action: none; }
 .xc-split::after { content: ""; position: absolute; left: 50%; top: 2px; width: 36px; height: 3px; margin-left: -18px; border-radius: 2px; background: var(--line-strong); }
 .xc-split:hover, .xc-split:focus-visible { background: var(--select-line); outline: none; }
+
+.start-with { display: grid; gap: 0.3rem; }
+.start-with .small { max-width: 70ch; }
